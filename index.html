@@ -690,21 +690,20 @@
   
     
     <div class="metric">
-      <div class="metric-label">Ø Kontrast (Helligkeit)</div>
+      <div class="metric-label">Ø Kontrast (Helligkeit) · Rohwert</div>
       <div class="metric-value" id="avgContrast" style="color: #4CAF50">–</div>
-      <div class="metric-raw" id="avgContrastRaw">Rohwert: –</div>
+      <div class="metric-raw" id="avgContrastRaw">Nachbar: – · Trennung: –</div>
     </div>
 
     <div class="metric">
-      <div class="metric-label">Ø Farbkontrast (Farbe)</div>
+      <div class="metric-label">Ø Farbkontrast (Farbe) · Rohwert</div>
       <div class="metric-value" id="avgColorContrast" style="color: #FFC107">–</div>
-      <div class="metric-raw" id="avgColorContrastRaw">Rohwert: –</div>
+      <div class="metric-raw" id="avgColorContrastRaw">Nachbar: – · Trennung: –</div>
     </div>
 
     <div class="metric">
-      <div class="metric-label">Ø Bewegung</div>
+      <div class="metric-label">Ø Bewegung · Rohwert (Helligkeit/s)</div>
       <div class="metric-value" id="avgMotion" style="color: #2196F3">–</div>
-      <div class="metric-raw" id="avgMotionRaw">Rohwert (Helligkeit/s): –</div>
     </div>
 
     <div class="metric">
@@ -715,7 +714,7 @@
     <div class="metric">
       <div class="metric-label">Ø Schnitt-Rohwert</div>
       <div class="metric-value" id="avgCutDiffRaw" style="color: #FF5252">–</div>
-      <div class="metric-raw" id="avgCutScoreNorm">Norm. Score: –</div>
+      <div class="metric-raw" id="avgTimePerCut">Zeit pro Schnitt: –</div>
     </div>
 
   </div>
@@ -865,10 +864,9 @@ const avgContrastRawEl = document.getElementById("avgContrastRaw");
 const avgColorContrastEl = document.getElementById("avgColorContrast");
 const avgColorContrastRawEl = document.getElementById("avgColorContrastRaw");
 const avgMotionEl = document.getElementById("avgMotion");
-const avgMotionRawEl = document.getElementById("avgMotionRaw");
 const cutCountEl = document.getElementById("cutCount");
 const avgCutDiffRawEl = document.getElementById("avgCutDiffRaw");
-const avgCutScoreNormEl = document.getElementById("avgCutScoreNorm");
+const avgTimePerCutEl = document.getElementById("avgTimePerCut");
 const cutListEl = document.getElementById("cutList");
 
 const chart = document.getElementById("chart");
@@ -1224,15 +1222,14 @@ fileInput.addEventListener("change", () => {
   progressBar.style.width = "0%";
 
   avgContrastEl.textContent = "–";
-  avgContrastRawEl.textContent = "Rohwert: –";
+  avgContrastRawEl.textContent = "Nachbar: – · Trennung: –";
 
   avgColorContrastEl.textContent = "–";
-  avgColorContrastRawEl.textContent = "Rohwert: –";
+  avgColorContrastRawEl.textContent = "Nachbar: – · Trennung: –";
   avgMotionEl.textContent = "–";
-  avgMotionRawEl.textContent = "Rohwert (Helligkeit/s): –";
   cutCountEl.textContent = "–";
   avgCutDiffRawEl.textContent = "–";
-  avgCutScoreNormEl.textContent = "Norm. Score: –";
+  avgTimePerCutEl.textContent = "Zeit pro Schnitt: –";
 
   cutListEl.innerHTML =
     '<span style="color:#777">Noch keine Analyse.</span>';
@@ -1314,15 +1311,14 @@ clearBtn.addEventListener("click", () => {
   progressBar.style.width = "0%";
 
   avgContrastEl.textContent = "–";
-  avgContrastRawEl.textContent = "Rohwert: –";
+  avgContrastRawEl.textContent = "Nachbar: – · Trennung: –";
 
   avgColorContrastEl.textContent = "–";
-  avgColorContrastRawEl.textContent = "Rohwert: –";
+  avgColorContrastRawEl.textContent = "Nachbar: – · Trennung: –";
   avgMotionEl.textContent = "–";
-  avgMotionRawEl.textContent = "Rohwert (Helligkeit/s): –";
   cutCountEl.textContent = "–";
   avgCutDiffRawEl.textContent = "–";
-  avgCutScoreNormEl.textContent = "Norm. Score: –";
+  avgTimePerCutEl.textContent = "Zeit pro Schnitt: –";
 
   cutListEl.innerHTML =
     '<span style="color:#777">Noch keine Analyse.</span>';
@@ -2391,16 +2387,14 @@ function finishAnalysis(wasCancelled) {
   /*
     Durchschnittswerte.
 
-    Neben den kalibrierten 0-100-Werten (für Kacheln/Chart wie
-    bisher) werden zusätzlich die unnormierten Rohwerte berechnet,
-    für eine eigene wissenschaftliche Normierung (siehe
-    CSV-Export).
+    Es werden ausschließlich die unnormierten Rohwerte berechnet
+    und angezeigt (Kacheln, Zusammenfassung, CSV-Export). Die
+    kalibrierten 0-100-Werte pro Frame (contrast, colorContrast,
+    motion, cutScore) existieren weiterhin in "results" und
+    werden für die Chart-Darstellung sowie die Schnitterkennung
+    verwendet, tauchen aber nicht mehr in Tabellen oder Kacheln
+    auf.
   */
-
-  const avgContrast =
-    average(
-      results.map(r => r.contrast)
-    );
 
   const avgContrastRaw =
     average(
@@ -2415,11 +2409,6 @@ function finishAnalysis(wasCancelled) {
   const avgContrastSeparationRaw =
     average(
       results.map(r => r.contrastSeparationRaw)
-    );
-
-  const avgColorContrast =
-    average(
-      results.map(r => r.colorContrast)
     );
 
   const avgColorContrastRaw =
@@ -2437,11 +2426,6 @@ function finishAnalysis(wasCancelled) {
       results.map(r => r.colorContrastSeparationRaw)
     );
 
-  const avgMotion =
-    average(
-      results.map(r => r.motion)
-    );
-
   const avgMotionRaw =
     average(
       results.map(r => r.motionRaw)
@@ -2452,39 +2436,26 @@ function finishAnalysis(wasCancelled) {
       results.map(r => r.cutDiffRaw)
     );
 
-  const avgCutScoreNorm =
-    average(
-      results.map(r => r.cutScore)
-    );
-
 
   avgContrastEl.textContent =
-    Math.round(avgContrast);
+    formatDecimal(avgContrastRaw);
 
   avgContrastRawEl.textContent =
-    `Rohwert: ${formatDecimal(avgContrastRaw)} ` +
-    `(Nachbar: ${formatDecimal(avgContrastNeighborRaw)} · ` +
-    `Trennung: ${formatDecimal(avgContrastSeparationRaw)})`;
+    `Nachbar: ${formatDecimal(avgContrastNeighborRaw)} · ` +
+    `Trennung: ${formatDecimal(avgContrastSeparationRaw)}`;
 
   avgColorContrastEl.textContent =
-    Math.round(avgColorContrast);
+    formatDecimal(avgColorContrastRaw);
 
   avgColorContrastRawEl.textContent =
-    `Rohwert: ${formatDecimal(avgColorContrastRaw)} ` +
-    `(Nachbar: ${formatDecimal(avgColorContrastNeighborRaw)} · ` +
-    `Trennung: ${formatDecimal(avgColorContrastSeparationRaw)})`;
+    `Nachbar: ${formatDecimal(avgColorContrastNeighborRaw)} · ` +
+    `Trennung: ${formatDecimal(avgColorContrastSeparationRaw)}`;
 
   avgMotionEl.textContent =
-    Math.round(avgMotion);
-
-  avgMotionRawEl.textContent =
-    `Rohwert (Helligkeit/s): ${formatDecimal(avgMotionRaw)}`;
+    formatDecimal(avgMotionRaw);
 
   avgCutDiffRawEl.textContent =
     formatDecimal(avgCutDiffRaw);
-
-  avgCutScoreNormEl.textContent =
-    `Norm. Score: ${Math.round(avgCutScoreNorm)}`;
 
 
   /*
@@ -2526,6 +2497,27 @@ function finishAnalysis(wasCancelled) {
   const analysisTime = (performance.now() - analysisStartTime) / 1000;
   const formattedTime = analysisTime.toFixed(1).replace(".", ",");
 
+  /*
+    Zeit pro Schnitt: durchschnittlicher Abstand zwischen zwei
+    Schnitten IM VIDEO, also Videodauer geteilt durch Anzahl
+    Schnitte. Zuvor wurde hier fälschlicherweise analysisTime
+    verwendet - das ist aber die Rechenzeit, die der Browser für
+    die Analyse gebraucht hat (abhängig von Gerät/Auslastung),
+    und hat mit der Schnittfrequenz im Video selbst nichts zu
+    tun. Für "wie oft wird geschnitten" ist ausschließlich die
+    tatsächliche Videodauer relevant.
+  */
+
+  const videoDurationSeconds = chartFullDuration;
+
+  const zeitProSchnittSeconds =
+    cuts.length > 0
+      ? videoDurationSeconds / cuts.length
+      : NaN;
+
+  avgTimePerCutEl.textContent =
+    `Zeit pro Schnitt: ${formatDecimal(zeitProSchnittSeconds)} s`;
+
   lastSummary = {
     seriesName: currentSeriesName,
     fileName: currentFileName,
@@ -2535,19 +2527,17 @@ function finishAnalysis(wasCancelled) {
     contrastGridRows: CONTRAST_GRID_ROWS,
     analysisWidth: ANALYSIS_WIDTH,
     analysisHeight: ANALYSIS_HEIGHT,
-    avgContrast,
     avgContrastRaw,
     avgContrastNeighborRaw,
     avgContrastSeparationRaw,
-    avgColorContrast,
     avgColorContrastRaw,
     avgColorContrastNeighborRaw,
     avgColorContrastSeparationRaw,
-    avgMotion,
     avgMotionRaw,
     avgCutDiffRaw,
-    avgCutScoreNorm,
     cutCount: cuts.length,
+    videoDurationSeconds,
+    zeitProSchnittSeconds,
     analysisTimeSeconds: analysisTime,
     wasCancelled
   };
@@ -3467,15 +3457,11 @@ function buildFramesCsv() {
     "Kontrast_Helligkeit_roh",
     "Kontrast_Helligkeit_roh_Nachbar",
     "Kontrast_Helligkeit_roh_Trennung",
-    "Kontrast_Helligkeit_norm_0_100",
     "Farbkontrast_roh",
     "Farbkontrast_roh_Nachbar",
     "Farbkontrast_roh_Trennung",
-    "Farbkontrast_norm_0_100",
     "Bewegung_roh_Helligkeit_pro_s",
-    "Bewegung_norm_0_100",
     "SchnittIntensitaet_roh_deltaRGB",
-    "SchnittScore_norm_0_100",
     "IstSchnitt"
   ].join(";");
 
@@ -3484,15 +3470,11 @@ function buildFramesCsv() {
     formatDecimal(r.contrastRaw, 3),
     formatDecimal(r.contrastNeighborRaw, 3),
     formatDecimal(r.contrastSeparationRaw, 3),
-    formatDecimal(r.contrast, 2),
     formatDecimal(r.colorContrastRaw, 3),
     formatDecimal(r.colorContrastNeighborRaw, 3),
     formatDecimal(r.colorContrastSeparationRaw, 3),
-    formatDecimal(r.colorContrast, 2),
     formatDecimal(r.motionRaw, 3),
-    formatDecimal(r.motion, 2),
     formatDecimal(r.cutDiffRaw, 3),
-    formatDecimal(r.cutScore, 2),
     cutTimes.has(r.time) ? 1 : 0
   ].join(";"));
 
@@ -3513,8 +3495,9 @@ function buildSummaryCsv() {
     ["Kontrast_Raster", `${lastSummary.contrastGridCols}x${lastSummary.contrastGridRows}`],
     ["Analyseaufloesung_px", `${lastSummary.analysisWidth}x${lastSummary.analysisHeight}`],
     ["Anzahl_Frames", lastSummary.frameCount],
+    ["Video_Dauer_s", formatDecimal(lastSummary.videoDurationSeconds, 2)],
     ["Anzahl_Schnitte", lastSummary.cutCount],
-    ["ZeitProSchnitt", formatDecimal((lastSummary.analysisTimeSeconds / lastSummary.cutCount),2)],
+    ["ZeitProSchnitt_s", formatDecimal(lastSummary.zeitProSchnittSeconds, 2)],
     ["Analyse_abgebrochen", lastSummary.wasCancelled ? "ja" : "nein"],
     ["Analysezeit_s", formatDecimal(lastSummary.analysisTimeSeconds, 1)],
     ["Kontrast_Helligkeit_roh_Mittelwert", formatDecimal(lastSummary.avgContrastRaw, 3)],
@@ -3651,19 +3634,17 @@ function buildComparisonCsv(list) {
     "Sample_FPS",
     "Kontrast_Raster",
     "Anzahl_Frames",
+    "Video_Dauer_s",
     "Anzahl_Schnitte",
+    "ZeitProSchnitt_s",
     "Kontrast_Helligkeit_roh_Mittelwert",
     "Kontrast_Helligkeit_roh_Nachbar_Mittelwert",
     "Kontrast_Helligkeit_roh_Trennung_Mittelwert",
-    "Kontrast_Helligkeit_norm_0_100_Mittelwert",
     "Farbkontrast_roh_Mittelwert",
     "Farbkontrast_roh_Nachbar_Mittelwert",
     "Farbkontrast_roh_Trennung_Mittelwert",
-    "Farbkontrast_norm_0_100_Mittelwert",
     "Bewegung_roh_Helligkeit_pro_s_Mittelwert",
-    "Bewegung_norm_0_100_Mittelwert",
     "SchnittIntensitaet_roh_deltaRGB_Mittelwert",
-    "SchnittScore_norm_0_100_Mittelwert",
     "Analysezeit_s"
   ].join(";");
 
@@ -3676,19 +3657,17 @@ function buildComparisonCsv(list) {
       ? `${entry.contrastGridCols}x${entry.contrastGridRows}`
       : "-",
     entry.frameCount,
+    formatDecimal(entry.videoDurationSeconds, 2),
     entry.cutCount,
+    formatDecimal(entry.zeitProSchnittSeconds, 2),
     formatDecimal(entry.avgContrastRaw, 3),
     formatDecimal(entry.avgContrastNeighborRaw, 3),
     formatDecimal(entry.avgContrastSeparationRaw, 3),
-    formatDecimal(entry.avgContrast, 2),
     formatDecimal(entry.avgColorContrastRaw, 3),
     formatDecimal(entry.avgColorContrastNeighborRaw, 3),
     formatDecimal(entry.avgColorContrastSeparationRaw, 3),
-    formatDecimal(entry.avgColorContrast, 2),
     formatDecimal(entry.avgMotionRaw, 3),
-    formatDecimal(entry.avgMotion, 2),
     formatDecimal(entry.avgCutDiffRaw, 3),
-    formatDecimal(entry.avgCutScoreNorm, 2),
     formatDecimal(entry.analysisTimeSeconds, 1)
   ].join(";"));
 
@@ -3712,19 +3691,17 @@ addToComparisonBtn.addEventListener("click", () => {
     contrastGridCols: lastSummary.contrastGridCols,
     contrastGridRows: lastSummary.contrastGridRows,
     frameCount: lastSummary.frameCount,
+    videoDurationSeconds: lastSummary.videoDurationSeconds,
     cutCount: lastSummary.cutCount,
+    zeitProSchnittSeconds: lastSummary.zeitProSchnittSeconds,
     avgContrastRaw: lastSummary.avgContrastRaw,
     avgContrastNeighborRaw: lastSummary.avgContrastNeighborRaw,
     avgContrastSeparationRaw: lastSummary.avgContrastSeparationRaw,
-    avgContrast: lastSummary.avgContrast,
     avgColorContrastRaw: lastSummary.avgColorContrastRaw,
     avgColorContrastNeighborRaw: lastSummary.avgColorContrastNeighborRaw,
     avgColorContrastSeparationRaw: lastSummary.avgColorContrastSeparationRaw,
-    avgColorContrast: lastSummary.avgColorContrast,
     avgMotionRaw: lastSummary.avgMotionRaw,
-    avgMotion: lastSummary.avgMotion,
     avgCutDiffRaw: lastSummary.avgCutDiffRaw,
-    avgCutScoreNorm: lastSummary.avgCutScoreNorm,
     analysisTimeSeconds: lastSummary.analysisTimeSeconds
   });
 
