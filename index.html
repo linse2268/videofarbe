@@ -3514,7 +3514,7 @@ function buildSummaryCsv() {
     ["Analyseaufloesung_px", `${lastSummary.analysisWidth}x${lastSummary.analysisHeight}`],
     ["Anzahl_Frames", lastSummary.frameCount],
     ["Anzahl_Schnitte", lastSummary.cutCount],
-    ["ZeitProSchnitt", (formatDecimal(lastSummary.analysisTimeSeconds, 1) / lastSummary.cutCount)],
+    ["ZeitProSchnitt", formatDecimal((lastSummary.analysisTimeSeconds / lastSummary.cutCount),2)],
     ["Analyse_abgebrochen", lastSummary.wasCancelled ? "ja" : "nein"],
     ["Analysezeit_s", formatDecimal(lastSummary.analysisTimeSeconds, 1)],
     ["Kontrast_Helligkeit_roh_Mittelwert", formatDecimal(lastSummary.avgContrastRaw, 3)],
