@@ -451,6 +451,7 @@
     .comparison {
         width: 100%;
         margin-top: 16px;
+        margin-bottom: 16px;
         padding: 16px;
 
         background: #181818;
@@ -566,17 +567,8 @@
     Lokaler Kontrast · Bewegung · Schnitte
   </div>
 
-  <div class="field">
-    <label class="field-label" for="seriesNameInput">
-      Serie / Bezeichnung (für Dateinamen &amp; Vergleich)
-    </label>
-    <input
-      type="text"
-      id="seriesNameInput"
-      placeholder="z. B. Werbespot A"
-      autocomplete="off"
-    >
-  </div>
+  
+    
 
   <label class="upload">
     <strong>Video auswählen</strong>
@@ -587,7 +579,17 @@
     <input id="fileInput" type="file" accept="video/*">
   </label>
 
-  <video id="video" playsinline controls preload="metadata"></video>
+  <div class="field">
+    <label class="field-label" for="seriesNameInput">
+      Serie / Bezeichnung (für Dateinamen &amp; Vergleich)
+    </label>
+  <input
+      type="text"
+      id="seriesNameInput"
+      placeholder="z. B. Peppa Pig"
+      autocomplete="off"
+    >
+  </div>
 
   <div class="field">
     <label class="field-label" for="fpsSelect">
@@ -610,6 +612,7 @@
     </select>
   </div>
 
+
   <div class="controls">
     <button id="analyzeBtn" disabled>
       Analyse starten
@@ -628,6 +631,12 @@
     </button>
   </div>
 
+  <video id="video" playsinline controls preload="metadata"></video>
+
+  
+
+  
+
   <div class="status" id="status" role="status" aria-live="polite" aria-atomic="true">
     Noch kein Video ausgewählt.
   </div>
@@ -636,41 +645,8 @@
     <div class="progress-bar" id="progressBar"></div>
   </div>
 
-  <div class="metrics">
-  
-    
-    <div class="metric">
-      <div class="metric-label">Ø Kontrast (Helligkeit)</div>
-      <div class="metric-value" id="avgContrast" style="color: #4CAF50">–</div>
-      <div class="metric-raw" id="avgContrastRaw">Rohwert: –</div>
-    </div>
 
-    <div class="metric">
-      <div class="metric-label">Ø Farbkontrast (Farbe)</div>
-      <div class="metric-value" id="avgColorContrast" style="color: #FFC107">–</div>
-      <div class="metric-raw" id="avgColorContrastRaw">Rohwert: –</div>
-    </div>
-
-    <div class="metric">
-      <div class="metric-label">Ø Bewegung</div>
-      <div class="metric-value" id="avgMotion" style="color: #2196F3">–</div>
-      <div class="metric-raw" id="avgMotionRaw">Rohwert (Helligkeit/s): –</div>
-    </div>
-
-    <div class="metric">
-      <div class="metric-label">Schnitte</div>
-      <div class="metric-value" id="cutCount" style="color: #FF5252">–</div>
-    </div>
-
-    <div class="metric">
-      <div class="metric-label">Ø Schnitt-Rohwert</div>
-      <div class="metric-value" id="avgCutDiffRaw" style="color: #FF5252">–</div>
-      <div class="metric-raw" id="avgCutScoreNorm">Norm. Score: –</div>
-    </div>
-
-  </div>
-
-  <div class="chart-container">
+<div class="chart-container">
     <div class="zoom-toolbar">
       <button id="zoomInBtn" disabled>+ Zoom</button>
       <button id="zoomOutBtn" disabled>− Zoom</button>
@@ -709,12 +685,44 @@
     </div>
   </div>
 
-  <div class="cuts">
-    <strong>Erkannte Schnitte</strong>
-    <div class="cut-list" id="cutList">
-      <span style="color:#777">Noch keine Analyse.</span>
+
+  <div class="metrics">
+  
+    
+    <div class="metric">
+      <div class="metric-label">Ø Kontrast (Helligkeit)</div>
+      <div class="metric-value" id="avgContrast" style="color: #4CAF50">–</div>
+      <div class="metric-raw" id="avgContrastRaw">Rohwert: –</div>
     </div>
+
+    <div class="metric">
+      <div class="metric-label">Ø Farbkontrast (Farbe)</div>
+      <div class="metric-value" id="avgColorContrast" style="color: #FFC107">–</div>
+      <div class="metric-raw" id="avgColorContrastRaw">Rohwert: –</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Ø Bewegung</div>
+      <div class="metric-value" id="avgMotion" style="color: #2196F3">–</div>
+      <div class="metric-raw" id="avgMotionRaw">Rohwert (Helligkeit/s): –</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Schnitte</div>
+      <div class="metric-value" id="cutCount" style="color: #FF5252">–</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Ø Schnitt-Rohwert</div>
+      <div class="metric-value" id="avgCutDiffRaw" style="color: #FF5252">–</div>
+      <div class="metric-raw" id="avgCutScoreNorm">Norm. Score: –</div>
+    </div>
+
   </div>
+
+  
+
+  
 
   <div class="comparison">
     <strong>Vergleich mehrerer Videos</strong>
@@ -734,6 +742,13 @@
       <button id="clearComparisonBtn" disabled>
         Vergleichsliste leeren
       </button>
+    </div>
+  </div>
+
+  <div class="cuts">
+    <strong>Erkannte Schnitte</strong>
+    <div class="cut-list" id="cutList">
+      <span style="color:#777">Noch keine Analyse.</span>
     </div>
   </div>
 
@@ -3494,26 +3509,22 @@ function buildSummaryCsv() {
   const rows = [
     ["Kennzahl", "Wert"],
     ["Serie", lastSummary.seriesName || "-"],
-    ["Dateiname", lastSummary.fileName || "-"],
     ["Sample_FPS", lastSummary.sampleFps],
     ["Kontrast_Raster", `${lastSummary.contrastGridCols}x${lastSummary.contrastGridRows}`],
     ["Analyseaufloesung_px", `${lastSummary.analysisWidth}x${lastSummary.analysisHeight}`],
     ["Anzahl_Frames", lastSummary.frameCount],
     ["Anzahl_Schnitte", lastSummary.cutCount],
+    ["ZeitProSchnitt", (formatDecimal(lastSummary.analysisTimeSeconds, 1) / lastSummary.cutCount)],
     ["Analyse_abgebrochen", lastSummary.wasCancelled ? "ja" : "nein"],
     ["Analysezeit_s", formatDecimal(lastSummary.analysisTimeSeconds, 1)],
     ["Kontrast_Helligkeit_roh_Mittelwert", formatDecimal(lastSummary.avgContrastRaw, 3)],
     ["Kontrast_Helligkeit_roh_Nachbar_Mittelwert", formatDecimal(lastSummary.avgContrastNeighborRaw, 3)],
     ["Kontrast_Helligkeit_roh_Trennung_Mittelwert", formatDecimal(lastSummary.avgContrastSeparationRaw, 3)],
-    ["Kontrast_Helligkeit_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgContrast, 2)],
     ["Farbkontrast_roh_Mittelwert", formatDecimal(lastSummary.avgColorContrastRaw, 3)],
     ["Farbkontrast_roh_Nachbar_Mittelwert", formatDecimal(lastSummary.avgColorContrastNeighborRaw, 3)],
     ["Farbkontrast_roh_Trennung_Mittelwert", formatDecimal(lastSummary.avgColorContrastSeparationRaw, 3)],
-    ["Farbkontrast_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgColorContrast, 2)],
     ["Bewegung_roh_Helligkeit_pro_s_Mittelwert", formatDecimal(lastSummary.avgMotionRaw, 3)],
-    ["Bewegung_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgMotion, 2)],
     ["SchnittIntensitaet_roh_deltaRGB_Mittelwert", formatDecimal(lastSummary.avgCutDiffRaw, 3)],
-    ["SchnittScore_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgCutScoreNorm, 2)]
   ];
 
   return rows.map(cols => cols.join(";")).join("\r\n");
