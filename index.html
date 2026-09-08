@@ -1,0 +1,3775 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Neue Videoanalyse</title>
+  <link rel="icon" type="image/city" href="/images/city.png">
+
+  <style>
+    /* =========================
+       Basis
+       ========================= */
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+    }
+
+    body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #111;
+        color: #fff;
+    }
+
+
+    /* =========================
+       Layout
+       ========================= */
+
+    .app {
+        width: min(900px, 100%);
+        margin: 0 auto;
+        padding: 24px;
+    }
+
+    h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+        line-height: 1.25;
+    }
+
+    .subtitle {
+        margin: 0 0 20px;
+        color: #aaa;
+        line-height: 1.5;
+    }
+
+
+    /* =========================
+       Upload
+       ========================= */
+
+    .upload {
+        display: block;
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 30px 20px;
+
+        border: 2px dashed #444;
+        border-radius: 16px;
+
+        background: #181818;
+        text-align: center;
+
+        cursor: pointer;
+        transition: border-color 0.2s ease;
+    }
+
+    .upload:hover {
+        border-color: #777;
+    }
+
+    .upload-text {
+        color: #888;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+
+    /* =========================
+       Video
+       ========================= */
+
+    video {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        max-height: 500px;
+
+        background: #000;
+        border-radius: 14px;
+
+        object-fit: contain;
+    }
+
+
+    /* =========================
+       Buttons
+       ========================= */
+
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+
+        margin: 15px 0;
+    }
+
+    button {
+        flex: 0 0 auto;
+
+        padding: 12px 18px;
+
+        border: 0;
+        border-radius: 10px;
+
+        background: #fff;
+        color: #111;
+
+        font: inherit;
+        font-size: 15px;
+
+        cursor: pointer;
+    }
+
+    button:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+
+
+    /* =========================
+       Status & Progress
+       ========================= */
+
+    .status {
+        min-height: 24px;
+        margin: 10px 0;
+
+        color: #aaa;
+        line-height: 1.5;
+    }
+
+    .progress {
+        width: 100%;
+        height: 8px;
+        margin-bottom: 20px;
+
+        background: #292929;
+        border-radius: 999px;
+
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+
+        background: #fff;
+
+        transition: width 0.1s linear;
+    }
+
+
+    /* =========================
+       Metriken
+       ========================= */
+
+    .metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+
+        margin-bottom: 20px;
+    }
+
+    .metric {
+        min-width: 0;
+        padding: 16px;
+
+        background: #181818;
+        border-radius: 14px;
+    }
+
+    .metric-label {
+        margin-bottom: 5px;
+
+        color: #aaa;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .metric-value {
+        min-width: 0;
+
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.2;
+
+        overflow-wrap: anywhere;
+    }
+
+
+    /* =========================
+       Chart
+       ========================= */
+
+    .chart-container {
+        width: 100%;
+        margin-bottom: 20px;
+        padding: 15px;
+
+        background: #181818;
+        border-radius: 14px;
+
+        overflow: hidden;
+    }
+
+    .chart-body {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .chart-y-axis {
+        display: flex;
+        flex: 0 0 auto;
+        flex-direction: column;
+        justify-content: space-between;
+
+        padding: 2px 0;
+
+        color: #666;
+        font-size: 11px;
+        line-height: 1;
+        text-align: right;
+    }
+
+    canvas.chart {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 250px;
+    }
+
+    .chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+
+        margin-top: 12px;
+
+        color: #aaa;
+        font-size: 12px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-swatch {
+        display: inline-block;
+        flex: 0 0 auto;
+
+        width: 14px;
+        height: 3px;
+
+        border-radius: 2px;
+    }
+
+    .legend-swatch.contrast {
+        background: #4CAF50;
+    }
+
+    .legend-swatch.colorcontrast {
+        background: #FFC107;
+    }
+
+    .legend-swatch.motion {
+        background: repeating-linear-gradient(
+            to right,
+            #2196F3 0,
+            #2196F3 4px,
+            transparent 4px,
+            transparent 8px
+        );
+    }
+
+    .legend-swatch.cut {
+        width: 3px;
+        height: 14px;
+
+        background: #FF5252;
+    }
+
+
+    /* =========================
+       Schnitte
+       ========================= */
+
+    .cuts {
+        width: 100%;
+        padding: 16px;
+
+        background: #181818;
+        border-radius: 14px;
+    }
+
+    .cut-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        margin-top: 10px;
+    }
+
+    .cut {
+        max-width: 100%;
+        padding: 7px 10px;
+
+        background: #333;
+        border-radius: 8px;
+
+        font-size: 13px;
+
+        overflow-wrap: anywhere;
+    }
+
+    .empty-state {
+        color: #777;
+    }
+
+
+    /* =========================
+       Formularfelder (Serie, FPS)
+       ========================= */
+
+    .field {
+        display: block;
+        margin-bottom: 14px;
+    }
+
+    .field-label {
+        display: block;
+        margin-bottom: 6px;
+
+        color: #aaa;
+        font-size: 13px;
+    }
+
+    input[type="text"],
+    select {
+        width: 100%;
+        padding: 12px 14px;
+
+        border: 1px solid #333;
+        border-radius: 10px;
+
+        background: #181818;
+        color: #fff;
+
+        font: inherit;
+        font-size: 15px;
+    }
+
+    input[type="text"]::placeholder {
+        color: #666;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+        outline: none;
+        border-color: #777;
+    }
+
+    select:disabled,
+    input[type="text"]:disabled {
+        opacity: 0.5;
+    }
+
+
+    /* =========================
+       Metrik-Rohwert
+       ========================= */
+
+    .metric-raw {
+        margin-top: 4px;
+
+        color: #777;
+        font-size: 12px;
+        line-height: 1.4;
+
+        overflow-wrap: anywhere;
+    }
+
+
+    /* =========================
+       Zoom-Chart (synchron mit Video)
+       ========================= */
+
+    .zoom-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+
+        margin-bottom: 10px;
+    }
+
+    .zoom-toolbar button {
+        flex: 0 0 auto;
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    .zoom-range-label {
+        margin-left: auto;
+
+        color: #888;
+        font-size: 12px;
+    }
+
+    canvas.chart.zoomable {
+        cursor: grab;
+        touch-action: none;
+    }
+
+    canvas.chart.zoomable:active {
+        cursor: grabbing;
+    }
+
+
+    /* =========================
+       Vergleich mehrerer Videos
+       ========================= */
+
+    .comparison {
+        width: 100%;
+        margin-top: 16px;
+        padding: 16px;
+
+        background: #181818;
+        border-radius: 14px;
+    }
+
+    .comparison-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+
+        margin-top: 10px;
+    }
+
+    .comparison-controls button {
+        flex: 0 0 auto;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+
+    .comparison-count {
+        color: #aaa;
+        font-size: 13px;
+    }
+
+
+    /* =========================
+       Info
+       ========================= */
+
+    .info {
+        margin-top: 20px;
+
+        color: #888;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+
+    /* =========================
+       Tablet / Mobile
+       ========================= */
+
+    @media (max-width: 600px) {
+        .app {
+            padding: 16px 12px;
+        }
+
+        h1 {
+            font-size: 22px;
+        }
+
+        .upload {
+            padding: 24px 16px;
+        }
+
+        video {
+            max-height: 60vh;
+        }
+
+        .controls {
+            flex-direction: column;
+        }
+
+        .controls button {
+            width: 100%;
+        }
+
+        .metrics {
+            grid-template-columns: 1fr;
+        }
+
+        .metric {
+            padding: 14px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+        }
+
+        canvas.chart {
+            height: 200px;
+        }
+    }
+
+
+    /* =========================
+       Sehr kleine Displays
+       ========================= */
+
+    @media (max-width: 380px) {
+        .app {
+            padding: 12px 10px;
+        }
+
+        .chart-container {
+            padding: 10px;
+        }
+
+        .cuts {
+            padding: 12px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <h1>Neue Videoanalyse</h1>
+  <div class="subtitle">
+    Lokaler Kontrast · Bewegung · Schnitte
+  </div>
+
+  <div class="field">
+    <label class="field-label" for="seriesNameInput">
+      Serie / Bezeichnung (für Dateinamen &amp; Vergleich)
+    </label>
+    <input
+      type="text"
+      id="seriesNameInput"
+      placeholder="z. B. Werbespot A"
+      autocomplete="off"
+    >
+  </div>
+
+  <label class="upload">
+    <strong>Video auswählen</strong>
+    <br>
+    <span style="color:#888">
+      Das Video bleibt auf deinem Gerät.
+    </span>
+    <input id="fileInput" type="file" accept="video/*">
+  </label>
+
+  <video id="video" playsinline controls preload="metadata"></video>
+
+  <div class="field">
+    <label class="field-label" for="fpsSelect">
+      Sample-Rate (Analyse-FPS)
+    </label>
+    <select id="fpsSelect">
+      <option value="10" selected>10 FPS</option>
+      <option value="20">20 FPS</option>
+      <option value="30">30 FPS</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label class="field-label" for="contrastGridSelect">
+      Raster für Kontrastanalyse
+    </label>
+    <select id="contrastGridSelect">
+      <option value="16x9" selected>16×9 (grob)</option>
+      <option value="32x18">32×18 (fein)</option>
+    </select>
+  </div>
+
+  <div class="controls">
+    <button id="analyzeBtn" disabled>
+      Analyse starten
+    </button>
+
+    <button id="clearBtn" disabled>
+      Zurücksetzen
+    </button>
+
+    <button id="exportFramesBtn" disabled>
+      CSV: Einzelbilder
+    </button>
+
+    <button id="exportSummaryBtn" disabled>
+      CSV: Zusammenfassung
+    </button>
+  </div>
+
+  <div class="status" id="status" role="status" aria-live="polite" aria-atomic="true">
+    Noch kein Video ausgewählt.
+  </div>
+
+  <div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="metrics">
+  
+    
+    <div class="metric">
+      <div class="metric-label">Ø Kontrast (Helligkeit)</div>
+      <div class="metric-value" id="avgContrast" style="color: #4CAF50">–</div>
+      <div class="metric-raw" id="avgContrastRaw">Rohwert: –</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Ø Farbkontrast (Farbe)</div>
+      <div class="metric-value" id="avgColorContrast" style="color: #FFC107">–</div>
+      <div class="metric-raw" id="avgColorContrastRaw">Rohwert: –</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Ø Bewegung</div>
+      <div class="metric-value" id="avgMotion" style="color: #2196F3">–</div>
+      <div class="metric-raw" id="avgMotionRaw">Rohwert (Helligkeit/s): –</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Schnitte</div>
+      <div class="metric-value" id="cutCount" style="color: #FF5252">–</div>
+    </div>
+
+    <div class="metric">
+      <div class="metric-label">Ø Schnitt-Rohwert</div>
+      <div class="metric-value" id="avgCutDiffRaw" style="color: #FF5252">–</div>
+      <div class="metric-raw" id="avgCutScoreNorm">Norm. Score: –</div>
+    </div>
+
+  </div>
+
+  <div class="chart-container">
+    <div class="zoom-toolbar">
+      <button id="zoomInBtn" disabled>+ Zoom</button>
+      <button id="zoomOutBtn" disabled>− Zoom</button>
+      <button id="zoomResetBtn" disabled>Ganzes Video</button>
+      <span class="zoom-range-label" id="zoomRangeLabel">Ansicht: –</span>
+    </div>
+    <div class="chart-body">
+      <div class="chart-y-axis" aria-hidden="true">
+        <span>100%</span>
+        <span>50%</span>
+        <span>0%</span>
+      </div>
+      <canvas id="chart" class="chart zoomable"></canvas>
+    </div>
+    <div class="chart-legend">
+      <span class="legend-item">
+        <span class="legend-swatch contrast"></span>
+        Kontrast (Helligkeit)
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch colorcontrast"></span>
+        Farbkontrast (Farbe)
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch motion"></span>
+        Bewegung
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch cut"></span>
+        Schnitt
+      </span>
+    </div>
+    <div class="info" style="margin-top:10px;">
+      Ziehen zum Verschieben, Mausrad/Buttons zum Zoomen, Klick springt im Video an diese Stelle.
+      Während der Wiedergabe folgt die Ansicht automatisch der Abspielposition (weiße Linie).
+    </div>
+  </div>
+
+  <div class="cuts">
+    <strong>Erkannte Schnitte</strong>
+    <div class="cut-list" id="cutList">
+      <span style="color:#777">Noch keine Analyse.</span>
+    </div>
+  </div>
+
+  <div class="comparison">
+    <strong>Vergleich mehrerer Videos</strong>
+    <div class="info" style="margin-top:6px;">
+      Wird im lokalen Speicher deines Browsers abgelegt (bleibt auch nach
+      Neuladen erhalten, funktioniert am zuverlässigsten wenn du diese
+      Datei heruntergeladen und direkt im Browser geöffnet hast).
+    </div>
+    <div class="comparison-count" id="comparisonCount">0 Videos gespeichert</div>
+    <div class="comparison-controls">
+      <button id="addToComparisonBtn" disabled>
+        Zur Vergleichsliste hinzufügen
+      </button>
+      <button id="exportComparisonBtn" disabled>
+        CSV: Vergleich exportieren
+      </button>
+      <button id="clearComparisonBtn" disabled>
+        Vergleichsliste leeren
+      </button>
+    </div>
+  </div>
+
+  <div class="info">
+    Die Analyse erfolgt vollständig lokal im Browser.
+    Es werden keine Videodaten an einen Server übertragen.
+  </div>
+
+</div>
+
+
+<script>
+"use strict";
+
+/*
+  ============================================================
+  Lokale Videoanalyse
+  ============================================================
+
+  Analysiert:
+
+  1. Kontrast (Helligkeit & Farbe)
+  2. Bewegung
+  3. Schnitte
+
+  Keine externen Libraries.
+  Keine Serververbindung.
+
+  ------------------------------------------------------------
+  Änderungen in dieser Version:
+
+  - Fortschritt & Frame-Zeitstempel basieren auf der tatsächlichen
+    Videoposition (video.currentTime) statt auf einer rein
+    rechnerischen Zeit. Dadurch stimmt die Fortschrittsanzeige
+    auch dann, wenn video.duration ungenau ist.
+  - Erkennung, wenn das Video beim Seek nicht mehr vorankommt
+    (z. B. weil das tatsächliche Ende schon erreicht ist, aber
+    video.duration einen größeren Wert meldet). Die Analyse
+    bricht dann sauber ab, statt denselben Frame endlos erneut
+    zu analysieren.
+  - Zusätzliche inhaltsbasierte Endeerkennung: Bei manchen
+    Dateien meldet der Browser eine falsche video.duration UND
+    video.currentTime bewegt sich beim Seek trotzdem weiter,
+    obwohl gar kein echter Frame mehr dekodiert werden kann.
+    Das äußert sich als schwarzer, eingefrorener Frame ohne
+    jede Veränderung zum vorherigen Frame. Wird das erkannt
+    (mehrere Frames hintereinander schwarz UND unverändert),
+    gilt das echte Ende als erreicht; die betroffenen Frames
+    werden aus dem Ergebnis entfernt.
+  - Die tatsächlich nutzbare Videolänge wird zusätzlich über
+    video.seekable ermittelt, falls verfügbar. Das liefert bei
+    manchen fehlerhaften Dateien von vornherein einen
+    genaueren Wert als video.duration.
+  - SAMPLE_FPS von 30 auf 10 reduziert (siehe Kommentar unten).
+  - Kontrast/Bewegung/Schnitt werden in einem gemeinsamen
+    Pixel-Durchlauf berechnet statt in drei getrennten.
+  - Wiederverwendete Puffer für den vorherigen Frame statt
+    einer neuen Array-Allokation pro Frame.
+  - Timeout beim Seek, damit die Analyse nicht endlos hängt,
+    falls das "seeked"-Event einmal nicht feuert.
+  - Abbrechen-Möglichkeit über den vorhandenen "Analyse
+    starten"-Button (wechselt während der Analyse zu
+    "Abbrechen").
+  - Einfache Dateityp-Prüfung bei der Auswahl.
+  - Seitenverhältnis wird beim Verkleinern auf die
+    Analyseauflösung beibehalten (Letterboxing), damit das
+    Bild nicht verzerrt wird.
+  - Kontrast wird jetzt in zwei getrennten Metriken erfasst,
+    basierend auf einem wählbaren Blockraster (16×9 oder 32×18,
+    analog zur Sample-FPS-Auswahl) statt auf einzelnen Pixeln
+    oder der globalen Helligkeitsstreuung des gesamten Bildes:
+
+      1. "Kontrast (Helligkeit)": wie stark sich zusammen-
+         hängende Bildbereiche (Blöcke) in ihrer Helligkeit
+         voneinander abheben. Kombiniert aus (a) der mittleren
+         Helligkeitsdifferenz benachbarter Blöcke und (b) der
+         Helligkeitsdifferenz zwischen den zwei Helligkeits-
+         gruppen, in die sich das Bild am deutlichsten aufteilen
+         lässt (Otsu-artige Zwei-Gruppen-Trennung).
+      2. "Farbkontrast (Farbe)": dieselbe Idee, aber ausschließ-
+         lich auf Basis der Farbinformation (Chrominanz, YCbCr-
+         Farbraum), unabhängig von der Helligkeit. Das erkennt
+         auch Fälle, in denen sich Vordergrund und Hintergrund
+         zwar farblich, aber kaum in der Helligkeit unterscheiden
+         (z. B. eine rote Figur vor grünem Hintergrund bei
+         ähnlicher Helligkeit) - das wäre über reine Helligkeits-
+         betrachtung nicht erkennbar gewesen.
+
+    Beide Metriken sind bewusst getrennt (nicht zu einem
+    gemeinsamen Score verrechnet), damit erkennbar bleibt, ob
+    sich Vordergrund/Hintergrund eher über Helligkeit oder eher
+    über Farbe trennen. Werte aus älteren Analysen/CSV-Exporten
+    sind mit dieser Version nicht direkt vergleichbar.
+  ------------------------------------------------------------
+*/
+
+
+const fileInput = document.getElementById("fileInput");
+const video = document.getElementById("video");
+const analyzeBtn = document.getElementById("analyzeBtn");
+const clearBtn = document.getElementById("clearBtn");
+const exportFramesBtn = document.getElementById("exportFramesBtn");
+const exportSummaryBtn = document.getElementById("exportSummaryBtn");
+
+const seriesNameInput = document.getElementById("seriesNameInput");
+const fpsSelect = document.getElementById("fpsSelect");
+const contrastGridSelect = document.getElementById("contrastGridSelect");
+
+const statusEl = document.getElementById("status");
+const progressBar = document.getElementById("progressBar");
+
+const avgContrastEl = document.getElementById("avgContrast");
+const avgContrastRawEl = document.getElementById("avgContrastRaw");
+const avgColorContrastEl = document.getElementById("avgColorContrast");
+const avgColorContrastRawEl = document.getElementById("avgColorContrastRaw");
+const avgMotionEl = document.getElementById("avgMotion");
+const avgMotionRawEl = document.getElementById("avgMotionRaw");
+const cutCountEl = document.getElementById("cutCount");
+const avgCutDiffRawEl = document.getElementById("avgCutDiffRaw");
+const avgCutScoreNormEl = document.getElementById("avgCutScoreNorm");
+const cutListEl = document.getElementById("cutList");
+
+const chart = document.getElementById("chart");
+const chartCtx = chart.getContext("2d");
+
+const zoomInBtn = document.getElementById("zoomInBtn");
+const zoomOutBtn = document.getElementById("zoomOutBtn");
+const zoomResetBtn = document.getElementById("zoomResetBtn");
+const zoomRangeLabelEl = document.getElementById("zoomRangeLabel");
+
+const comparisonCountEl = document.getElementById("comparisonCount");
+const addToComparisonBtn = document.getElementById("addToComparisonBtn");
+const exportComparisonBtn = document.getElementById("exportComparisonBtn");
+const clearComparisonBtn = document.getElementById("clearComparisonBtn");
+
+
+/*
+  Analyseauflösung.
+
+  160 x 90 = 14.400 Pixel pro Frame.
+
+  Das ist absichtlich klein, damit die Analyse
+  auch auf Smartphones schnell bleibt.
+*/
+const ANALYSIS_WIDTH = 160;
+const ANALYSIS_HEIGHT = 90;
+
+
+/*
+  Anzahl Frames pro Sekunde.
+
+  10 FPS ist für Farb-/Bewegungs-/Schnittanalyse
+  ein guter Kompromiss für mobile Geräte.
+
+  Jeder Sample-Schritt braucht einen Seek im Video, und das
+  ist der mit Abstand teuerste Teil der Analyse. Ein zu hoher
+  Wert (z. B. 30) vervielfacht die Anzahl der Seeks, ohne dass
+  Kontrast/Bewegung/Schnitte spürbar genauer erkannt werden.
+*/
+let SAMPLE_FPS = 10;
+
+
+/*
+  Zeitnormalisierung für die Bewegungsanalyse.
+
+  Die rohe Helligkeitsdifferenz zwischen zwei Samples hängt stark
+  vom zeitlichen Abstand zwischen den Samples ab. Damit der
+  Motion-Wert unabhängig von SAMPLE_FPS vergleichbar bleibt, wird
+  die gemessene Helligkeitsdifferenz durch die tatsächlich
+  vergangene Zeit zwischen den beiden Samples geteilt
+  ("Helligkeitsänderung pro Sekunde").
+
+  WICHTIG: MOTION_REFERENCE_FPS ist ein FESTER Referenzwert und
+  NICHT identisch mit der (jetzt vom Nutzer wählbaren) SAMPLE_FPS.
+  Würde man stattdessen SAMPLE_FPS selbst verwenden, würde sich
+  SAMPLE_FPS in der Rechnung exakt herauskürzen (weil deltaTime
+  selbst schon ≈ 1/SAMPLE_FPS ist) und die Zeitnormalisierung
+  hätte keine Wirkung mehr. Mit einem fixen Referenzwert bleibt
+  Motion unabhängig von der gewählten Sample-Rate vergleichbar.
+*/
+const MOTION_REFERENCE_FPS = 10;
+const MOTION_RATE_FOR_MAX_SCORE = 25 * MOTION_REFERENCE_FPS;
+
+
+/*
+  ------------------------------------------------------------
+  Raster für die Kontrastanalyse (Helligkeit & Farbe)
+  ------------------------------------------------------------
+
+  Statt einzelner Pixel oder der globalen Helligkeitsstreuung
+  des gesamten Bildes wird das Analysebild (ANALYSIS_WIDTH x
+  ANALYSIS_HEIGHT) in ein Raster aus Blöcken unterteilt. Jeder
+  Block repräsentiert einen zusammenhängenden Bildbereich; für
+  ihn wird ein einzelner Mittelwert gebildet (Helligkeit und
+  Farbe), statt jedes Pixel einzeln zu betrachten. Das ist
+  robuster gegenüber Bildrauschen/Kompressionsartefakten als
+  ein reiner Pixel-zu-Pixel-Vergleich, bildet aber weiterhin
+  ab, wie stark sich zusammenhängende Flächen (potenziell
+  Vordergrund vs. Hintergrund) voneinander unterscheiden.
+
+  16x9 und 32x18 wurden gewählt, weil sie sich beide glatt in
+  ANALYSIS_WIDTH/ANALYSIS_HEIGHT (160x90) teilen lassen
+  (Blockgröße 10x10 bzw. 5x5 Pixel) - es entstehen also keine
+  krummen Randblöcke.
+*/
+let CONTRAST_GRID_COLS = 16;
+let CONTRAST_GRID_ROWS = 9;
+
+const MAX_CONTRAST_GRID_COLS = 32;
+const MAX_CONTRAST_GRID_ROWS = 18;
+const MAX_CONTRAST_BLOCKS =
+  MAX_CONTRAST_GRID_COLS * MAX_CONTRAST_GRID_ROWS;
+
+
+/*
+  Gewichtung der beiden Teilaspekte innerhalb je einer
+  Kontrastmetrik (Helligkeit bzw. Farbe):
+
+  - "Nachbar"-Anteil: mittlere Differenz zwischen direkt
+    benachbarten Blöcken. Misst Kantenschärfe/Konturen.
+  - "Trennung"-Anteil: Differenz zwischen den zwei Gruppen, in
+    die sich die Blöcke am deutlichsten aufteilen lassen. Misst,
+    wie klar sich das Bild in zwei Bereiche (z. B. Figur vs.
+    Hintergrund) trennen lässt, unabhängig von deren genauer
+    Position im Bild.
+
+  Der "Trennung"-Anteil liegt näher an der eigentlichen
+  Zielsetzung ("wie gut trennt sich Vordergrund vom
+  Hintergrund") und wird deshalb etwas stärker gewichtet. Beide
+  Rohwerte werden zusätzlich einzeln im CSV-Export mitgegeben,
+  falls diese Gewichtung sich in der Praxis als unpassend
+  herausstellt.
+*/
+const CONTRAST_NEIGHBOR_WEIGHT = 0.4;
+const CONTRAST_SEPARATION_WEIGHT = 0.6;
+
+
+/*
+  Referenzwerte für die Normierung auf 0-100.
+
+  Nicht empirisch kalibriert, sondern grobe Startwerte - bei
+  Bedarf anhand von Testvideos anpassen (ein Video mit sehr
+  klarer Vordergrund/Hintergrund-Trennung sollte nahe 100
+  liegen, ein sehr flaches/kontrastarmes Bild nahe 0).
+
+  Die Referenzwerte für Helligkeit und Farbe unterscheiden sich,
+  weil Chrominanzwerte (Cb/Cr) in dieser Berechnung einen
+  anderen typischen Wertebereich haben als Luminanzwerte (Y).
+*/
+const LUMINANCE_NEIGHBOR_REFERENCE = 10;
+const LUMINANCE_SEPARATION_REFERENCE = 60;
+const COLOR_NEIGHBOR_REFERENCE = 8;
+const COLOR_SEPARATION_REFERENCE = 25;
+
+
+/*
+
+  Untere Grenze für deltaTime bei der Bewegungsberechnung.
+
+  Verhindert eine Division durch 0 bzw. unrealistisch hohe
+  Ausreißer, falls zwei Samples (z. B. durch Rundungsfehler beim
+  Seek) einen extrem kleinen oder keinen zeitlichen Abstand haben.
+*/
+const MOTION_MIN_DELTA_TIME = 1 / 120;
+
+
+/*
+  Timeout für einen einzelnen Seek-Vorgang.
+
+  Falls das "seeked"-Event aus irgendeinem Grund nicht feuert,
+  würde die Analyse sonst unbegrenzt hängen bleiben.
+*/
+const SEEK_TIMEOUT_MS = 3000;
+
+
+/*
+  Mindestens zwei aufeinanderfolgende Samples ohne
+  Fortschritt der Videoposition, bevor die Analyse
+  als "am Ende angekommen" gewertet wird.
+*/
+const STUCK_SAMPLES_LIMIT = 2;
+
+
+/*
+  Inhaltsbasierte Endeerkennung.
+
+  Manche Videodateien haben eine video.duration, die länger
+  ist als der tatsächlich dekodierbare Inhalt. In diesem Fall
+  bewegt sich video.currentTime beim Seek zwar trotzdem weiter
+  (die STUCK-Erkennung oben greift also nicht), es wird aber
+  kein echter Frame mehr geliefert - stattdessen ein schwarzer,
+  unveränderter Frame.
+
+  Ein Frame gilt als "leer", wenn er nahezu schwarz ist UND
+  sich praktisch nicht vom vorherigen Frame unterscheidet.
+  Tritt das mehrfach hintereinander auf, ist das echte Ende
+  erreicht.
+*/
+
+// Mittlere Luminanz (0-255), unterhalb derer ein Frame als
+// "nahezu schwarz" gilt.
+const BLANK_LUMINANCE_THRESHOLD = 10;
+
+// Mittlere Pixeldifferenz zum vorherigen Frame, unterhalb
+// derer ein Frame als "unverändert" gilt.
+const BLANK_DIFF_THRESHOLD = 2;
+
+// Anzahl aufeinanderfolgender "leerer" Frames, bevor die
+// Analyse abgebrochen und der betroffene Bereich verworfen
+// wird.
+const BLANK_STREAK_LIMIT = 5;
+
+
+/*
+  Canvas für die Frameanalyse.
+*/
+const analysisCanvas = document.createElement("canvas");
+analysisCanvas.width = ANALYSIS_WIDTH;
+analysisCanvas.height = ANALYSIS_HEIGHT;
+
+const analysisCtx = analysisCanvas.getContext("2d", {
+  willReadFrequently: true
+});
+
+
+let videoURL = null;
+let results = [];
+let isAnalyzing = false;
+let cancelRequested = false;
+let analysisStartTime = 0;
+let currentFileName = "";
+let currentSeriesName = "";
+let lastSummary = null;
+
+
+/*
+  Zoom-/Pan-Zustand des Charts.
+
+  chartViewStart/chartViewEnd definieren den aktuell sichtbaren
+  Zeitbereich (in Sekunden) innerhalb der Gesamtdauer
+  chartFullDuration. Werden nach jeder Analyse auf die volle
+  Videolänge zurückgesetzt.
+*/
+let chartFullDuration = 0;
+let chartViewStart = 0;
+let chartViewEnd = 0;
+
+const MIN_ZOOM_WINDOW_SECONDS = 0.5;
+
+let chartPointerActive = false;
+let chartPointerMoved = false;
+let chartPointerStartX = 0;
+let chartPointerStartViewStart = 0;
+let chartPointerStartWidth = 0;
+
+let playheadRafId = null;
+
+
+/*
+  Lokaler Speicher für den Video-Vergleich.
+*/
+const COMPARISON_STORAGE_KEY = "videoanalyse_vergleichsliste_v1";
+
+
+/*
+  Zwei wiederverwendete Puffer für den "vorherigen Frame".
+
+  Statt bei jedem Frame ein neues Uint8ClampedArray zu
+  allozieren, wird abwechselnd in diese beiden Puffer
+  geschrieben.
+*/
+const FRAME_BUFFER_SIZE = ANALYSIS_WIDTH * ANALYSIS_HEIGHT * 4;
+const frameBuffers = [
+  new Uint8ClampedArray(FRAME_BUFFER_SIZE),
+  new Uint8ClampedArray(FRAME_BUFFER_SIZE)
+];
+
+let previousFrame = null;
+let nextBufferIndex = 0;
+
+
+/*
+  Wiederverwendete Puffer für die Block-Raster-Kontrastanalyse
+  (Helligkeit & Farbe).
+
+  Statt pro Pixel einen Wert zu speichern (wie bei den übrigen
+  Metriken), werden hier pro BLOCK die Summen von Luminanz (Y)
+  und Chrominanz (Cb, Cr) sowie die Anzahl der Pixel je Block
+  gesammelt. Daraus werden anschließend die Block-Mittelwerte
+  gebildet. Die Puffer sind auf die maximal mögliche Rastergröße
+  (32x18) ausgelegt und werden je nach gewähltem Raster nur
+  teilweise befüllt (die ersten CONTRAST_GRID_COLS *
+  CONTRAST_GRID_ROWS Einträge).
+
+  Y/Cb/Cr statt RGB, weil eine reine RGB-Differenz nicht
+  wahrnehmungslinear ist (gleich große RGB-Abstände wirken je
+  nach Farbton unterschiedlich stark) und weil YCbCr außerdem
+  erlaubt, Helligkeit (Y) und Farbe (Cb/Cr) für die beiden
+  getrennten Kontrastmetriken sauber zu trennen.
+*/
+const blockSumY = new Float64Array(MAX_CONTRAST_BLOCKS);
+const blockSumCb = new Float64Array(MAX_CONTRAST_BLOCKS);
+const blockSumCr = new Float64Array(MAX_CONTRAST_BLOCKS);
+const blockCount = new Int32Array(MAX_CONTRAST_BLOCKS);
+
+const blockMeanY = new Float64Array(MAX_CONTRAST_BLOCKS);
+const blockMeanCb = new Float64Array(MAX_CONTRAST_BLOCKS);
+const blockMeanCr = new Float64Array(MAX_CONTRAST_BLOCKS);
+
+/*
+  Wiederverwendeter Scratch-Puffer zum Sortieren der Block-
+  Helligkeitswerte (für die Otsu-artige Zwei-Gruppen-Trennung,
+  siehe otsuSplit()). Als TypedArray, weil TypedArray.sort()
+  ohne Comparator numerisch sortiert (im Gegensatz zu
+  Array.sort(), das standardmäßig lexikografisch sortiert) und
+  weil so keine neue Array-Allokation pro Frame nötig ist.
+*/
+const blockSortScratch = new Float64Array(MAX_CONTRAST_BLOCKS);
+
+
+/*
+  ------------------------------------------------------------
+  Datei auswählen
+  ------------------------------------------------------------
+*/
+
+fileInput.addEventListener("change", () => {
+
+  const file = fileInput.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  /*
+    Einfache Prüfung, ob überhaupt eine Videodatei
+    ausgewählt wurde.
+  */
+
+  if (file.type && !file.type.startsWith("video/")) {
+
+    statusEl.textContent =
+      "Bitte eine Videodatei auswählen.";
+
+    fileInput.value = "";
+
+    return;
+  }
+
+  if (videoURL) {
+    URL.revokeObjectURL(videoURL);
+  }
+
+  videoURL = URL.createObjectURL(file);
+
+  video.src = videoURL;
+
+  currentFileName = file.name;
+  lastSummary = null;
+
+  analyzeBtn.disabled = false;
+  clearBtn.disabled = false;
+  exportFramesBtn.disabled = true;
+  exportSummaryBtn.disabled = true;
+  addToComparisonBtn.disabled = true;
+  zoomInBtn.disabled = true;
+  zoomOutBtn.disabled = true;
+  zoomResetBtn.disabled = true;
+
+  statusEl.textContent =
+    `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+
+  progressBar.style.width = "0%";
+
+  avgContrastEl.textContent = "–";
+  avgContrastRawEl.textContent = "Rohwert: –";
+
+  avgColorContrastEl.textContent = "–";
+  avgColorContrastRawEl.textContent = "Rohwert: –";
+  avgMotionEl.textContent = "–";
+  avgMotionRawEl.textContent = "Rohwert (Helligkeit/s): –";
+  cutCountEl.textContent = "–";
+  avgCutDiffRawEl.textContent = "–";
+  avgCutScoreNormEl.textContent = "Norm. Score: –";
+
+  cutListEl.innerHTML =
+    '<span style="color:#777">Noch keine Analyse.</span>';
+
+  results = [];
+  previousFrame = null;
+  nextBufferIndex = 0;
+
+  chartFullDuration = 0;
+  chartViewStart = 0;
+  chartViewEnd = 0;
+  zoomRangeLabelEl.textContent = "Ansicht: –";
+
+  drawEmptyChart();
+});
+
+
+/*
+  ------------------------------------------------------------
+  Serienname
+  ------------------------------------------------------------
+
+  Wird für CSV-Dateinamen und den Vergleichs-Export verwendet.
+  Rein informativ, hat keinen Einfluss auf die Analyse selbst.
+*/
+
+seriesNameInput.addEventListener("input", () => {
+  currentSeriesName = seriesNameInput.value.trim();
+});
+
+
+/*
+  ------------------------------------------------------------
+  Zurücksetzen
+  ------------------------------------------------------------
+*/
+
+clearBtn.addEventListener("click", () => {
+
+  if (isAnalyzing) {
+    return;
+  }
+
+  if (videoURL) {
+    URL.revokeObjectURL(videoURL);
+    videoURL = null;
+  }
+
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+
+  fileInput.value = "";
+
+  analyzeBtn.disabled = true;
+  clearBtn.disabled = true;
+  exportFramesBtn.disabled = true;
+  exportSummaryBtn.disabled = true;
+  addToComparisonBtn.disabled = true;
+  zoomInBtn.disabled = true;
+  zoomOutBtn.disabled = true;
+  zoomResetBtn.disabled = true;
+
+  results = [];
+  previousFrame = null;
+  nextBufferIndex = 0;
+
+  currentFileName = "";
+  lastSummary = null;
+
+  chartFullDuration = 0;
+  chartViewStart = 0;
+  chartViewEnd = 0;
+  zoomRangeLabelEl.textContent = "Ansicht: –";
+
+  statusEl.textContent =
+    "Noch kein Video ausgewählt.";
+
+  progressBar.style.width = "0%";
+
+  avgContrastEl.textContent = "–";
+  avgContrastRawEl.textContent = "Rohwert: –";
+
+  avgColorContrastEl.textContent = "–";
+  avgColorContrastRawEl.textContent = "Rohwert: –";
+  avgMotionEl.textContent = "–";
+  avgMotionRawEl.textContent = "Rohwert (Helligkeit/s): –";
+  cutCountEl.textContent = "–";
+  avgCutDiffRawEl.textContent = "–";
+  avgCutScoreNormEl.textContent = "Norm. Score: –";
+
+  cutListEl.innerHTML =
+    '<span style="color:#777">Noch keine Analyse.</span>';
+
+  drawEmptyChart();
+});
+
+
+/*
+  ------------------------------------------------------------
+  Analyse starten / abbrechen
+
+  Derselbe Button startet die Analyse und dient während
+  der Analyse als "Abbrechen"-Button.
+  ------------------------------------------------------------
+*/
+
+analyzeBtn.addEventListener("click", async () => {
+
+  /*
+    Läuft bereits eine Analyse -> Klick bedeutet "abbrechen".
+  */
+
+  if (isAnalyzing) {
+
+    cancelRequested = true;
+
+    analyzeBtn.disabled = true;
+
+    statusEl.textContent =
+      "Analyse wird abgebrochen …";
+
+    return;
+  }
+
+
+  if (!video.duration || !isFinite(video.duration)) {
+    statusEl.textContent =
+      "Video konnte noch nicht geladen werden.";
+    return;
+  }
+
+  isAnalyzing = true;
+  cancelRequested = false;
+
+  /*
+    Sample-Rate erst hier übernehmen (nicht live während einer
+    laufenden Analyse), damit eine Änderung der Auswahl nicht
+    mitten in der Analyse zu inkonsistenten deltaTime-Werten
+    führt.
+  */
+  SAMPLE_FPS = parseInt(fpsSelect.value, 10) || 10;
+  fpsSelect.disabled = true;
+
+  /*
+    Kontrast-Raster ebenfalls erst hier übernehmen, aus
+    demselben Grund wie bei der Sample-Rate.
+  */
+  const [gridColsStr, gridRowsStr] =
+    contrastGridSelect.value.split("x");
+
+  CONTRAST_GRID_COLS = parseInt(gridColsStr, 10) || 16;
+  CONTRAST_GRID_ROWS = parseInt(gridRowsStr, 10) || 9;
+  contrastGridSelect.disabled = true;
+
+  analyzeBtn.textContent = "Abbrechen";
+  clearBtn.disabled = true;
+  exportFramesBtn.disabled = true;
+  exportSummaryBtn.disabled = true;
+  addToComparisonBtn.disabled = true;
+  zoomInBtn.disabled = true;
+  zoomOutBtn.disabled = true;
+  zoomResetBtn.disabled = true;
+
+  analysisStartTime = performance.now();
+
+  results = [];
+  previousFrame = null;
+  nextBufferIndex = 0;
+
+  progressBar.style.width = "0%";
+
+  statusEl.textContent =
+    "Analyse wird vorbereitet …";
+
+
+  try {
+
+    await analyzeVideo();
+
+    finishAnalysis(cancelRequested);
+
+  } catch (error) {
+
+    console.error(error);
+
+    statusEl.textContent =
+      "Fehler bei der Analyse.";
+
+  } finally {
+
+    isAnalyzing = false;
+    cancelRequested = false;
+
+    analyzeBtn.disabled = false;
+    analyzeBtn.textContent = "Analyse starten";
+
+    clearBtn.disabled = false;
+    fpsSelect.disabled = false;
+    contrastGridSelect.disabled = false;
+  }
+});
+
+
+/*
+  ------------------------------------------------------------
+  Tatsächlich nutzbare Videolänge ermitteln
+  ------------------------------------------------------------
+
+  video.duration ist bei manchen Dateien (z. B. bestimmte
+  Screen-Recordings oder Dateien mit variabler Framerate)
+  ungenau. video.seekable liefert die Zeitbereiche, die der
+  Browser tatsächlich ansteuern kann, und ist damit oft
+  verlässlicher. Ist ein kleinerer seekable-Endwert vorhanden,
+  wird dieser statt video.duration verwendet.
+  ------------------------------------------------------------
+*/
+
+function getEffectiveDuration() {
+
+  let effectiveDuration = video.duration;
+
+  try {
+
+    if (video.seekable && video.seekable.length > 0) {
+
+      const seekableEnd =
+        video.seekable.end(video.seekable.length - 1);
+
+      if (
+        isFinite(seekableEnd) &&
+        seekableEnd > 0 &&
+        seekableEnd < effectiveDuration
+      ) {
+
+        effectiveDuration = seekableEnd;
+      }
+    }
+
+  } catch (error) {
+
+    // video.seekable war nicht auswertbar - video.duration
+    // als Fallback beibehalten.
+  }
+
+  return effectiveDuration;
+}
+
+
+/*
+  ------------------------------------------------------------
+  Videoanalyse
+  ------------------------------------------------------------
+*/
+
+async function analyzeVideo() {
+
+  const duration = getEffectiveDuration();
+
+  /*
+    Wir wählen die Anzahl der Samples anhand
+    der Videolänge.
+
+    Beispiel:
+
+    20 Sekunden × 10 FPS = 200 Frames
+  */
+
+  const totalSamples =
+    Math.max(
+      1,
+      Math.ceil(duration * SAMPLE_FPS)
+    );
+
+
+  let lastActualTime = -1;
+  let stuckCount = 0;
+  let blankStreak = 0;
+
+
+  for (let i = 0; i < totalSamples; i++) {
+
+    if (cancelRequested) {
+      break;
+    }
+
+    const targetTime = i / SAMPLE_FPS;
+
+    // Stoppen, wenn das Ende des Videos erreicht ist
+    if (targetTime >= duration) {
+      break;
+    }
+
+    await seekVideo(targetTime);
+
+    /*
+      Statt der rein rechnerischen targetTime verwenden wir
+      die tatsächliche Position des Videos nach dem Seek.
+
+      Das ist wichtig, weil video.duration bei manchen Dateien
+      ungenau ist (z. B. Screen-Recordings, VFR-Videos). In dem
+      Fall würde die Fortschrittsanzeige sonst nicht stimmen.
+    */
+
+    const time = video.currentTime;
+
+
+    /*
+      Wenn sich die Videoposition trotz Seek nicht mehr
+      nennenswert bewegt, haben wir das tatsächliche Ende
+      des Videos erreicht - auch wenn video.duration einen
+      größeren Wert behauptet. Ohne diese Prüfung würde immer
+      wieder derselbe letzte Frame analysiert werden, bis
+      totalSamples erreicht ist (ungefähr doppelt so lange
+      Analysezeit wie nötig).
+    */
+
+    if (time <= lastActualTime + 0.001) {
+
+      stuckCount++;
+
+      if (stuckCount >= STUCK_SAMPLES_LIMIT) {
+        break;
+      }
+
+    } else {
+
+      stuckCount = 0;
+    }
+
+    lastActualTime = time;
+
+
+    /*
+      Frame in kleines Canvas rendern.
+
+      Das Seitenverhältnis des Videos wird dabei beibehalten
+      (Letterboxing), damit die Statistikwerte nicht durch eine
+      Verzerrung des Bildes verfälscht werden.
+    */
+
+    drawVideoFrameForAnalysis();
+
+
+    const imageData =
+      analysisCtx.getImageData(
+        0,
+        0,
+        ANALYSIS_WIDTH,
+        ANALYSIS_HEIGHT
+      );
+
+
+    /*
+      Tatsächlicher zeitlicher Abstand zum vorherigen Sample.
+
+      Wird für die zeitnormalisierte Bewegungsberechnung benötigt.
+      Die Zeit des vorherigen Samples steht bereits in "results"
+      zur Verfügung (das zuletzt hinzugefügte Element) - es wird
+      also keine zusätzliche Zeitquelle benötigt. Beim allerersten
+      Frame gibt es noch keinen vorherigen Eintrag; deltaTime
+      bleibt dann null (analyzeFrame liefert für diesen Fall
+      ohnehin motion = 0 zurück).
+    */
+
+    const previousSampleTime =
+      results.length > 0
+        ? results[results.length - 1].time
+        : null;
+
+    const deltaTime =
+      previousSampleTime === null
+        ? null
+        : time - previousSampleTime;
+
+
+    /*
+      Lokaler Kontrast, Bewegung und Schnittscore werden in
+      einem gemeinsamen Pixel-Durchlauf berechnet statt in drei
+      getrennten Schleifen.
+    */
+
+    const frame =
+      analyzeFrame(
+        imageData.data,
+        previousFrame,
+        deltaTime
+      );
+
+
+    results.push({
+      time,
+      contrast: frame.contrast,
+      contrastRaw: frame.contrastRaw,
+      contrastNeighborRaw: frame.contrastNeighborRaw,
+      contrastSeparationRaw: frame.contrastSeparationRaw,
+      colorContrast: frame.colorContrast,
+      colorContrastRaw: frame.colorContrastRaw,
+      colorContrastNeighborRaw: frame.colorContrastNeighborRaw,
+      colorContrastSeparationRaw: frame.colorContrastSeparationRaw,
+      motion: frame.motion,
+      motionRaw: frame.motionRaw,
+      cutScore: frame.cutScore,
+      cutDiffRaw: frame.cutDiffRaw
+    });
+
+
+    /*
+      Inhaltsbasierte Endeerkennung.
+
+      Ein Frame gilt als "leer", wenn er nahezu schwarz ist
+      und sich praktisch nicht vom vorherigen Frame
+      unterscheidet. previousFrame ist beim allerersten Frame
+      noch null - in dem Fall wird nicht gewertet, da noch
+      kein Vergleich möglich ist.
+    */
+
+    const isBlankFrame =
+      previousFrame !== null &&
+      frame.meanLuminance < BLANK_LUMINANCE_THRESHOLD &&
+      frame.pixelDiff < BLANK_DIFF_THRESHOLD;
+
+    if (isBlankFrame) {
+
+      blankStreak++;
+
+    } else {
+
+      blankStreak = 0;
+    }
+
+
+    /*
+      Aktuelles Frame für den nächsten Vergleich speichern.
+
+      Statt jedes Mal ein neues Array zu allozieren, wird
+      abwechselnd in einen von zwei wiederverwendeten Puffern
+      geschrieben.
+    */
+
+    const buffer = frameBuffers[nextBufferIndex];
+    buffer.set(imageData.data);
+    previousFrame = buffer;
+    nextBufferIndex = 1 - nextBufferIndex;
+
+
+    if (blankStreak >= BLANK_STREAK_LIMIT) {
+
+      /*
+        Die letzten blankStreak Frames waren schwarz und
+        unverändert - das ist kein echter Videoinhalt,
+        sondern das Resultat eines Seeks über das
+        tatsächliche Ende hinaus. Diese Frames werden aus
+        dem Ergebnis entfernt, bevor die Analyse beendet
+        wird.
+      */
+
+      results.splice(
+        results.length - blankStreak,
+        blankStreak
+      );
+
+      break;
+    }
+
+
+    /*
+      Fortschrittsanzeige.
+
+      Basierend auf der Anzahl der Samples statt auf
+      time / duration, damit eine ungenaue video.duration
+      die Anzeige nicht verfälscht.
+    */
+
+    const progress = Math.min(100, ((i + 1) / totalSamples) * 100);
+
+    progressBar.style.width = progress.toFixed(1) + "%";
+    statusEl.textContent = `Analyse ${Math.round(progress)} %`;
+
+
+    /*
+      Browser kurz Luft lassen.
+
+      Besonders wichtig auf Smartphones,
+      damit die Oberfläche nicht komplett einfriert.
+    */
+
+    if (i % 4 === 0) {
+      await nextFrame();
+    }
+  }
+
+  if (!cancelRequested) {
+    progressBar.style.width = "100%";
+    statusEl.textContent = "Analyse 100 %";
+  }
+}
+
+
+/*
+  ------------------------------------------------------------
+  Frame in das Analyse-Canvas zeichnen
+
+  Das Video wird unter Beibehaltung seines Seitenverhältnisses
+  in die feste Analyseauflösung eingepasst (Letterboxing /
+  Pillarboxing), statt es zu strecken. Nicht abgedeckte Ränder
+  werden schwarz gefüllt.
+  ------------------------------------------------------------
+*/
+
+function drawVideoFrameForAnalysis() {
+
+  const videoWidth = video.videoWidth || ANALYSIS_WIDTH;
+  const videoHeight = video.videoHeight || ANALYSIS_HEIGHT;
+
+  const canvasAspect = ANALYSIS_WIDTH / ANALYSIS_HEIGHT;
+  const videoAspect = videoWidth / videoHeight;
+
+  let drawWidth;
+  let drawHeight;
+
+  if (videoAspect > canvasAspect) {
+
+    // Video ist relativ breiter als die Analyseauflösung.
+    drawWidth = ANALYSIS_WIDTH;
+    drawHeight = ANALYSIS_WIDTH / videoAspect;
+
+  } else {
+
+    // Video ist relativ höher (oder gleiches Verhältnis).
+    drawHeight = ANALYSIS_HEIGHT;
+    drawWidth = ANALYSIS_HEIGHT * videoAspect;
+  }
+
+  const offsetX = (ANALYSIS_WIDTH - drawWidth) / 2;
+  const offsetY = (ANALYSIS_HEIGHT - drawHeight) / 2;
+
+  analysisCtx.fillStyle = "#000";
+  analysisCtx.fillRect(0, 0, ANALYSIS_WIDTH, ANALYSIS_HEIGHT);
+
+  analysisCtx.drawImage(
+    video,
+    offsetX,
+    offsetY,
+    drawWidth,
+    drawHeight
+  );
+}
+
+
+/*
+  ------------------------------------------------------------
+  Video auf bestimmte Zeit setzen
+  ------------------------------------------------------------
+*/
+
+function seekVideo(time, timeoutMs = SEEK_TIMEOUT_MS) {
+
+  return new Promise((resolve, reject) => {
+
+    let settled = false;
+
+    const onSeeked = () => {
+
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      resolve();
+    };
+
+    const onError = () => {
+
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      reject(
+        new Error("Video konnte nicht gelesen werden.")
+      );
+    };
+
+    const timeoutId = setTimeout(() => {
+
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      cleanup();
+      reject(
+        new Error("Zeitüberschreitung beim Springen im Video.")
+      );
+
+    }, timeoutMs);
+
+    function cleanup() {
+
+      clearTimeout(timeoutId);
+
+      video.removeEventListener(
+        "seeked",
+        onSeeked
+      );
+
+      video.removeEventListener(
+        "error",
+        onError
+      );
+    }
+
+    video.addEventListener(
+      "seeked",
+      onSeeked,
+      { once: true }
+    );
+
+    video.addEventListener(
+      "error",
+      onError,
+      { once: true }
+    );
+
+    video.currentTime = time;
+
+  });
+
+}
+
+
+/*
+  ------------------------------------------------------------
+  Hilfsfunktion: Zwei-Gruppen-Trennung (Otsu-artig)
+  ------------------------------------------------------------
+
+  Findet in einer sortierten Liste von Werten die Trennstelle,
+  die die zwei entstehenden Gruppen am deutlichsten voneinander
+  abhebt (maximale Zwischen-Gruppen-Varianz - dasselbe Prinzip
+  wie beim Otsu-Schwellenwertverfahren aus der Bildverarbeitung,
+  dort normalerweise auf ein Helligkeitshistogramm angewendet).
+
+  Damit wird nicht mit einem willkürlich festen Prozentsatz
+  (z. B. "oberste/unterste 25 %") gearbeitet, sondern die
+  Trennstelle automatisch dort gesetzt, wo sich zwei Bereiche
+  im Bild (z. B. eine Figur vs. Hintergrund) am klarsten
+  unterscheiden lassen - unabhängig davon, ob die Figur 10 %
+  oder 60 % der Bildfläche einnimmt.
+
+  Erwartet ein aufsteigend sortiertes Array-artiges Objekt
+  (normales Array oder TypedArray) und gibt die Mittelwerte der
+  unteren und oberen Gruppe zurück.
+*/
+
+function otsuSplit(sortedValues) {
+
+  const n = sortedValues.length;
+
+  if (n < 2) {
+
+    const only = n === 1 ? sortedValues[0] : 0;
+
+    return {
+      meanLow: only,
+      meanHigh: only
+    };
+  }
+
+  let totalSum = 0;
+
+  for (let i = 0; i < n; i++) {
+    totalSum += sortedValues[i];
+  }
+
+  let sumLow = 0;
+  let bestBetweenVariance = -1;
+  let bestSplitIndex = 0;
+
+  for (let i = 0; i < n - 1; i++) {
+
+    sumLow += sortedValues[i];
+
+    const countLow = i + 1;
+    const countHigh = n - countLow;
+    const sumHigh = totalSum - sumLow;
+
+    const meanLow = sumLow / countLow;
+    const meanHigh = sumHigh / countHigh;
+
+    const betweenVariance =
+      countLow * countHigh * (meanLow - meanHigh) * (meanLow - meanHigh);
+
+    if (betweenVariance > bestBetweenVariance) {
+      bestBetweenVariance = betweenVariance;
+      bestSplitIndex = i;
+    }
+  }
+
+  let finalSumLow = 0;
+
+  for (let i = 0; i <= bestSplitIndex; i++) {
+    finalSumLow += sortedValues[i];
+  }
+
+  const finalCountLow = bestSplitIndex + 1;
+  const finalCountHigh = n - finalCountLow;
+
+  return {
+    meanLow: finalSumLow / finalCountLow,
+    meanHigh: (totalSum - finalSumLow) / finalCountHigh
+  };
+}
+
+
+/*
+  ------------------------------------------------------------
+  Hilfsfunktion: mittlere paarweise Farbdistanz
+  ------------------------------------------------------------
+
+  Berechnet die mittlere (vereinfachte ΔE76-artige) Distanz
+  zwischen den Chrominanzwerten (Cb, Cr) ALLER Blockpaare im
+  Raster - nicht nur direkt benachbarter Blöcke. Das misst, wie
+  farblich vielfältig/getrennt das Bild insgesamt ist, unabhängig
+  von der genauen Position der Farbflächen zueinander.
+
+  Bewusst ohne Y (Helligkeit): der Helligkeitsanteil wird bereits
+  vollständig über contrastSeparationRaw (siehe otsuSplit oben)
+  abgedeckt. Würde man Y hier zusätzlich einbeziehen, würde sich
+  ein Teil dieser Metrik mit der Helligkeitsmetrik überschneiden
+  und Fälle wie "gleiche Helligkeit, andere Farbe" wieder
+  verwässern - genau der Fall, den diese separate Farbmetrik
+  eigentlich sichtbar machen soll.
+
+  Bei bis zu 576 Blöcken (32x18-Raster) sind das maximal ca.
+  165.600 Paare - pro Frame ein vernachlässigbarer Aufwand
+  verglichen mit den Kosten eines einzelnen Video-Seeks.
+*/
+
+function averagePairwiseChromaDistance(cbValues, crValues, count) {
+
+  if (count < 2) {
+    return 0;
+  }
+
+  let sum = 0;
+  let pairs = 0;
+
+  for (let i = 0; i < count; i++) {
+
+    const cbI = cbValues[i];
+    const crI = crValues[i];
+
+    for (let j = i + 1; j < count; j++) {
+
+      const dCb = cbI - cbValues[j];
+      const dCr = crI - crValues[j];
+
+      sum += Math.sqrt(dCb * dCb + dCr * dCr);
+      pairs++;
+    }
+  }
+
+  return pairs > 0 ? sum / pairs : 0;
+}
+
+
+/*
+  ------------------------------------------------------------
+  Frame-Analyse: Kontrast (Helligkeit & Farbe), Bewegung und
+  Schnittscore
+  ------------------------------------------------------------
+
+  Bewegung und Schnittscore werden wie bisher direkt aus dem
+  Pixel-Durchlauf berechnet. Kontrast wird dagegen NICHT mehr
+  pixelweise, sondern über ein Blockraster (CONTRAST_GRID_COLS x
+  CONTRAST_GRID_ROWS, vom Nutzer wählbar) ermittelt: Während des
+  Pixel-Durchlaufs werden Helligkeit (Y) und Farbe (Cb, Cr) pro
+  Block aufsummiert; danach werden in einem zweiten, günstigen
+  Durchlauf über die (deutlich kleinere) Anzahl an Blöcken zwei
+  GETRENNTE Kontrastmetriken gebildet:
+
+  - "contrast" (Helligkeit): wie stark sich zusammenhängende
+    Bildbereiche in ihrer Helligkeit unterscheiden. Kombiniert
+    aus (a) der mittleren Differenz benachbarter Blöcke
+    ("Kantenschärfe") und (b) der Differenz zwischen den zwei
+    Helligkeitsgruppen, in die sich das Bild am deutlichsten
+    aufteilen lässt (Otsu-artige Trennung, siehe otsuSplit()).
+  - "colorContrast" (Farbe): dieselbe Grundidee, aber
+    ausschließlich auf Basis der Farbinformation (Cb/Cr aus dem
+    YCbCr-Farbraum), unabhängig von der Helligkeit. Erkennt auch
+    Vordergrund/Hintergrund-Trennungen, die sich zwar farblich,
+    aber kaum in der Helligkeit unterscheiden (z. B. eine rote
+    Figur vor grünem Hintergrund bei ähnlicher Helligkeit).
+
+  Beide Metriken werden bewusst getrennt gehalten (nicht zu einem
+  gemeinsamen Gesamtscore verrechnet), damit erkennbar bleibt, ob
+  sich Vordergrund und Hintergrund eher über Helligkeit oder eher
+  über Farbe trennen.
+
+  YCbCr statt vollständigem Lab-Farbraum: einfacher/günstiger zu
+  berechnen (nur lineare Umrechnung, keine Kubikwurzel-artige
+  Nichtlinearität), dabei aber - anders als rohes RGB - bereits
+  deutlich wahrnehmungsnäher, weil Helligkeit (Y) und Farbe
+  (Cb/Cr) sauber getrennt sind.
+  ------------------------------------------------------------
+*/
+
+function analyzeFrame(data, previousData, deltaTime) {
+
+  const hasPrevious = !!previousData;
+
+  const numBlocks = CONTRAST_GRID_COLS * CONTRAST_GRID_ROWS;
+  const blockWidth = ANALYSIS_WIDTH / CONTRAST_GRID_COLS;
+  const blockHeight = ANALYSIS_HEIGHT / CONTRAST_GRID_ROWS;
+
+  blockSumY.fill(0, 0, numBlocks);
+  blockSumCb.fill(0, 0, numBlocks);
+  blockSumCr.fill(0, 0, numBlocks);
+  blockCount.fill(0, 0, numBlocks);
+
+  let lumSum = 0;
+
+  let motionDiffSum = 0;
+  let cutDiffSum = 0;
+
+  let count = 0;
+
+
+  for (let i = 0; i < data.length; i += 4) {
+
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    const luminance =
+      0.2126 * r +
+      0.7152 * g +
+      0.0722 * b;
+
+    /*
+      YCbCr (BT.709-Koeffizienten, passend zu den oben bereits
+      verwendeten Luminanzgewichten). Cb/Cr werden hier bewusst
+      NICHT auf den in 8-Bit-YCbCr üblichen Bereich verschoben
+      (kein +128), da sie ausschließlich für Differenzbildung
+      verwendet werden - eine konstante Verschiebung würde sich
+      dabei ohnehin wieder herauskürzen.
+    */
+    const cb = (b - luminance) / 1.8556;
+    const cr = (r - luminance) / 1.5748;
+
+    lumSum += luminance;
+    count++;
+
+    /*
+      Zuordnung des Pixels zu seinem Block, um die Y/Cb/Cr-Werte
+      dort aufzusummieren. i / 4 ist der lineare Pixelindex.
+    */
+    const pixelIndex = i / 4;
+    const x = pixelIndex % ANALYSIS_WIDTH;
+    const y = Math.floor(pixelIndex / ANALYSIS_WIDTH);
+
+    const blockCol =
+      Math.min(CONTRAST_GRID_COLS - 1, Math.floor(x / blockWidth));
+
+    const blockRow =
+      Math.min(CONTRAST_GRID_ROWS - 1, Math.floor(y / blockHeight));
+
+    const blockIndex = blockRow * CONTRAST_GRID_COLS + blockCol;
+
+    blockSumY[blockIndex] += luminance;
+    blockSumCb[blockIndex] += cb;
+    blockSumCr[blockIndex] += cr;
+    blockCount[blockIndex]++;
+
+
+    if (hasPrevious) {
+
+      const pr = previousData[i];
+      const pg = previousData[i + 1];
+      const pb = previousData[i + 2];
+
+      const previousLuminance =
+        0.2126 * pr +
+        0.7152 * pg +
+        0.0722 * pb;
+
+      motionDiffSum +=
+        Math.abs(luminance - previousLuminance);
+
+      cutDiffSum +=
+        (
+          Math.abs(r - pr) +
+          Math.abs(g - pg) +
+          Math.abs(b - pb)
+        ) / 3;
+    }
+  }
+
+  const mean = lumSum / count;
+
+
+  /*
+    Block-Mittelwerte bilden. Bei einem gültigen, glatt
+    teilbaren Raster (16x9 oder 32x18 auf 160x90) hat jeder
+    Block dieselbe Pixelanzahl und blockCount[i] ist niemals 0 -
+    das "|| 1" ist nur eine defensive Absicherung.
+  */
+
+  for (let blockIndex = 0; blockIndex < numBlocks; blockIndex++) {
+
+    const pixelsInBlock = blockCount[blockIndex] || 1;
+
+    blockMeanY[blockIndex] = blockSumY[blockIndex] / pixelsInBlock;
+    blockMeanCb[blockIndex] = blockSumCb[blockIndex] / pixelsInBlock;
+    blockMeanCr[blockIndex] = blockSumCr[blockIndex] / pixelsInBlock;
+  }
+
+
+  /*
+    Nachbar-Differenzen: mittlere Differenz zwischen direkt
+    benachbarten Blöcken (rechts/unten), getrennt für Helligkeit
+    und Farbe.
+  */
+
+  let lumNeighborSum = 0;
+  let colorNeighborSum = 0;
+  let neighborPairCount = 0;
+
+  for (let row = 0; row < CONTRAST_GRID_ROWS; row++) {
+
+    for (let col = 0; col < CONTRAST_GRID_COLS; col++) {
+
+      const idx = row * CONTRAST_GRID_COLS + col;
+
+      const blockY = blockMeanY[idx];
+      const blockCb = blockMeanCb[idx];
+      const blockCr = blockMeanCr[idx];
+
+      if (col < CONTRAST_GRID_COLS - 1) {
+
+        const rightIdx = idx + 1;
+
+        lumNeighborSum +=
+          Math.abs(blockY - blockMeanY[rightIdx]);
+
+        const dCb = blockCb - blockMeanCb[rightIdx];
+        const dCr = blockCr - blockMeanCr[rightIdx];
+
+        colorNeighborSum += Math.sqrt(dCb * dCb + dCr * dCr);
+
+        neighborPairCount++;
+      }
+
+      if (row < CONTRAST_GRID_ROWS - 1) {
+
+        const belowIdx = idx + CONTRAST_GRID_COLS;
+
+        lumNeighborSum +=
+          Math.abs(blockY - blockMeanY[belowIdx]);
+
+        const dCb = blockCb - blockMeanCb[belowIdx];
+        const dCr = blockCr - blockMeanCr[belowIdx];
+
+        colorNeighborSum += Math.sqrt(dCb * dCb + dCr * dCr);
+
+        neighborPairCount++;
+      }
+    }
+  }
+
+  const contrastNeighborRaw =
+    neighborPairCount > 0 ? lumNeighborSum / neighborPairCount : 0;
+
+  const colorContrastNeighborRaw =
+    neighborPairCount > 0 ? colorNeighborSum / neighborPairCount : 0;
+
+
+  /*
+    Zwei-Gruppen-Trennung der Helligkeit (Otsu-artig) und
+    mittlere paarweise Farbdistanz über alle Blöcke (siehe
+    Hilfsfunktionen oben).
+  */
+
+  const sortedBlockY = blockSortScratch.subarray(0, numBlocks);
+  sortedBlockY.set(blockMeanY.subarray(0, numBlocks));
+  sortedBlockY.sort();
+
+  const { meanLow: lumLowMean, meanHigh: lumHighMean } =
+    otsuSplit(sortedBlockY);
+
+  const contrastSeparationRaw =
+    Math.abs(lumHighMean - lumLowMean);
+
+  const colorContrastSeparationRaw =
+    averagePairwiseChromaDistance(blockMeanCb, blockMeanCr, numBlocks);
+
+
+  /*
+    Normierung auf 0-100 und Kombination von Nachbar- und
+    Trennungs-Anteil (siehe CONTRAST_NEIGHBOR_WEIGHT /
+    CONTRAST_SEPARATION_WEIGHT weiter oben).
+  */
+
+  const contrastNeighborNorm =
+    clamp((contrastNeighborRaw / LUMINANCE_NEIGHBOR_REFERENCE) * 100, 0, 100);
+
+  const contrastSeparationNorm =
+    clamp((contrastSeparationRaw / LUMINANCE_SEPARATION_REFERENCE) * 100, 0, 100);
+
+  const colorContrastNeighborNorm =
+    clamp((colorContrastNeighborRaw / COLOR_NEIGHBOR_REFERENCE) * 100, 0, 100);
+
+  const colorContrastSeparationNorm =
+    clamp((colorContrastSeparationRaw / COLOR_SEPARATION_REFERENCE) * 100, 0, 100);
+
+  const contrast =
+    clamp(
+      contrastNeighborNorm * CONTRAST_NEIGHBOR_WEIGHT +
+      contrastSeparationNorm * CONTRAST_SEPARATION_WEIGHT,
+      0,
+      100
+    );
+
+  const contrastRaw =
+    contrastNeighborRaw * CONTRAST_NEIGHBOR_WEIGHT +
+    contrastSeparationRaw * CONTRAST_SEPARATION_WEIGHT;
+
+  const colorContrast =
+    clamp(
+      colorContrastNeighborNorm * CONTRAST_NEIGHBOR_WEIGHT +
+      colorContrastSeparationNorm * CONTRAST_SEPARATION_WEIGHT,
+      0,
+      100
+    );
+
+  const colorContrastRaw =
+    colorContrastNeighborRaw * CONTRAST_NEIGHBOR_WEIGHT +
+    colorContrastSeparationRaw * CONTRAST_SEPARATION_WEIGHT;
+
+
+  if (!hasPrevious) {
+
+    return {
+      contrast,
+      contrastRaw,
+      contrastNeighborRaw,
+      contrastSeparationRaw,
+      colorContrast,
+      colorContrastRaw,
+      colorContrastNeighborRaw,
+      colorContrastSeparationRaw,
+      motion: 0,
+      motionRaw: 0,
+      cutScore: 0,
+      cutDiffRaw: 0,
+      meanLuminance: mean,
+      pixelDiff: 0
+    };
+  }
+
+
+  /*
+    Bewegung - roh, pro Sample-Schritt (nicht zeitnormalisiert).
+
+    Dieser Rohwert ist von SAMPLE_FPS abhängig und wird deshalb
+    NICHT als eigentlicher Motion-Wert verwendet, sondern nur für
+    den Schnittscore weiter unten, damit sich die Schnitterkennung
+    durch die neue Motion-Skalierung nicht verändert.
+  */
+
+  const averageMotionDifference =
+    motionDiffSum / count;
+
+  const motionForCutScore =
+    clamp((averageMotionDifference / 25) * 100, 0, 100);
+
+
+  /*
+    Bewegung - zeitnormalisiert (0-100, für Chart/Kachel) und roh
+    (für die wissenschaftliche Auswertung, z. B. CSV-Export).
+  */
+
+  const safeDeltaTime =
+    Math.max(deltaTime || 0, MOTION_MIN_DELTA_TIME);
+
+  const motionRaw =
+    averageMotionDifference / safeDeltaTime;
+
+  const motion =
+    clamp((motionRaw / MOTION_RATE_FOR_MAX_SCORE) * 100, 0, 100);
+
+
+  /*
+    Schnittscore.
+
+    Hier wird bewusst weiterhin motionForCutScore (die bisherige,
+    nicht zeitnormalisierte Bewegung) verwendet, damit sich die
+    Schnitterkennung durch die neue Motion-Skalierung nicht
+    verändert.
+  */
+
+  const averageCutDifference =
+    cutDiffSum / count;
+
+  const pixelScore =
+    clamp((averageCutDifference / 50) * 100, 0, 100);
+
+  const cutScore =
+    clamp(
+      pixelScore * 0.85 + Math.min(motionForCutScore, 70) * 0.15,
+      0,
+      100
+    );
+
+
+  return {
+    contrast,
+    contrastRaw,
+    contrastNeighborRaw,
+    contrastSeparationRaw,
+    colorContrast,
+    colorContrastRaw,
+    colorContrastNeighborRaw,
+    colorContrastSeparationRaw,
+    motion,
+    motionRaw,
+    cutScore,
+    cutDiffRaw: averageCutDifference,
+    meanLuminance: mean,
+    pixelDiff: averageCutDifference
+  };
+}
+
+
+/*
+  ------------------------------------------------------------
+  Analyse fertigstellen
+  ------------------------------------------------------------
+*/
+
+function finishAnalysis(wasCancelled) {
+
+  if (!results.length) {
+
+    if (wasCancelled) {
+      statusEl.textContent = "Analyse abgebrochen.";
+    }
+
+    return;
+  }
+
+
+  /*
+    Durchschnittswerte.
+
+    Neben den kalibrierten 0-100-Werten (für Kacheln/Chart wie
+    bisher) werden zusätzlich die unnormierten Rohwerte berechnet,
+    für eine eigene wissenschaftliche Normierung (siehe
+    CSV-Export).
+  */
+
+  const avgContrast =
+    average(
+      results.map(r => r.contrast)
+    );
+
+  const avgContrastRaw =
+    average(
+      results.map(r => r.contrastRaw)
+    );
+
+  const avgContrastNeighborRaw =
+    average(
+      results.map(r => r.contrastNeighborRaw)
+    );
+
+  const avgContrastSeparationRaw =
+    average(
+      results.map(r => r.contrastSeparationRaw)
+    );
+
+  const avgColorContrast =
+    average(
+      results.map(r => r.colorContrast)
+    );
+
+  const avgColorContrastRaw =
+    average(
+      results.map(r => r.colorContrastRaw)
+    );
+
+  const avgColorContrastNeighborRaw =
+    average(
+      results.map(r => r.colorContrastNeighborRaw)
+    );
+
+  const avgColorContrastSeparationRaw =
+    average(
+      results.map(r => r.colorContrastSeparationRaw)
+    );
+
+  const avgMotion =
+    average(
+      results.map(r => r.motion)
+    );
+
+  const avgMotionRaw =
+    average(
+      results.map(r => r.motionRaw)
+    );
+
+  const avgCutDiffRaw =
+    average(
+      results.map(r => r.cutDiffRaw)
+    );
+
+  const avgCutScoreNorm =
+    average(
+      results.map(r => r.cutScore)
+    );
+
+
+  avgContrastEl.textContent =
+    Math.round(avgContrast);
+
+  avgContrastRawEl.textContent =
+    `Rohwert: ${formatDecimal(avgContrastRaw)} ` +
+    `(Nachbar: ${formatDecimal(avgContrastNeighborRaw)} · ` +
+    `Trennung: ${formatDecimal(avgContrastSeparationRaw)})`;
+
+  avgColorContrastEl.textContent =
+    Math.round(avgColorContrast);
+
+  avgColorContrastRawEl.textContent =
+    `Rohwert: ${formatDecimal(avgColorContrastRaw)} ` +
+    `(Nachbar: ${formatDecimal(avgColorContrastNeighborRaw)} · ` +
+    `Trennung: ${formatDecimal(avgColorContrastSeparationRaw)})`;
+
+  avgMotionEl.textContent =
+    Math.round(avgMotion);
+
+  avgMotionRawEl.textContent =
+    `Rohwert (Helligkeit/s): ${formatDecimal(avgMotionRaw)}`;
+
+  avgCutDiffRawEl.textContent =
+    formatDecimal(avgCutDiffRaw);
+
+  avgCutScoreNormEl.textContent =
+    `Norm. Score: ${Math.round(avgCutScoreNorm)}`;
+
+
+  /*
+    Schnitte erkennen.
+  */
+
+  const cuts =
+    detectCuts(results);
+
+
+  cutCountEl.textContent =
+    cuts.length;
+
+
+  renderCutList(cuts);
+
+
+  /*
+    Zoom-Ansicht auf die volle Videolänge zurücksetzen und
+    Zoom-Buttons freigeben.
+  */
+
+  chartFullDuration = results[results.length - 1].time;
+  chartViewStart = 0;
+  chartViewEnd = chartFullDuration;
+
+  zoomInBtn.disabled = false;
+  zoomOutBtn.disabled = false;
+  zoomResetBtn.disabled = false;
+
+  updateZoomRangeLabel();
+  drawChart(results, cuts, chartViewStart, chartViewEnd);
+
+  exportFramesBtn.disabled = false;
+  exportSummaryBtn.disabled = false;
+  addToComparisonBtn.disabled = false;
+
+
+  const analysisTime = (performance.now() - analysisStartTime) / 1000;
+  const formattedTime = analysisTime.toFixed(1).replace(".", ",");
+
+  lastSummary = {
+    seriesName: currentSeriesName,
+    fileName: currentFileName,
+    frameCount: results.length,
+    sampleFps: SAMPLE_FPS,
+    contrastGridCols: CONTRAST_GRID_COLS,
+    contrastGridRows: CONTRAST_GRID_ROWS,
+    analysisWidth: ANALYSIS_WIDTH,
+    analysisHeight: ANALYSIS_HEIGHT,
+    avgContrast,
+    avgContrastRaw,
+    avgContrastNeighborRaw,
+    avgContrastSeparationRaw,
+    avgColorContrast,
+    avgColorContrastRaw,
+    avgColorContrastNeighborRaw,
+    avgColorContrastSeparationRaw,
+    avgMotion,
+    avgMotionRaw,
+    avgCutDiffRaw,
+    avgCutScoreNorm,
+    cutCount: cuts.length,
+    analysisTimeSeconds: analysisTime,
+    wasCancelled
+  };
+
+  if (wasCancelled) {
+
+    statusEl.textContent =
+      `Analyse abgebrochen · ${results.length} Frames untersucht. Dauer: ${formattedTime} Sekunden`;
+
+  } else {
+
+    statusEl.textContent =
+      `Analyse abgeschlossen · ${results.length} Frames untersucht. Analysezeit: ${formattedTime} Sekunden`;
+  }
+}
+
+
+/*
+  ------------------------------------------------------------
+  Schnitte erkennen
+  ------------------------------------------------------------
+
+  Wir verwenden nicht nur einen einzelnen Frame.
+
+  Zusätzlich gibt es eine Mindestdistanz zwischen
+  zwei Schnitten, damit ein einziger Übergang
+  nicht mehrfach erkannt wird.
+  ------------------------------------------------------------
+*/
+
+function detectCuts(data) {
+
+  const cuts = [];
+
+  /*
+    Score-Schwelle.
+
+    Kann später kalibriert werden.
+  */
+
+  const THRESHOLD = 72;
+
+
+  /*
+    Mindestens 0.35 Sekunden zwischen Schnitten.
+  */
+
+  const MIN_DISTANCE = 0.35;
+
+
+  let lastCutTime = -Infinity;
+
+
+  for (let i = 1; i < data.length - 1; i++) {
+
+    const current =
+      data[i];
+
+    const previous =
+      data[i - 1];
+
+    const next =
+      data[i + 1];
+
+
+    /*
+      Lokales Maximum.
+
+      Dadurch wird nicht jeder Frame
+      eines längeren Übergangs als Cut erkannt.
+    */
+
+    const isPeak =
+      current.cutScore >= previous.cutScore &&
+      current.cutScore >= next.cutScore;
+
+
+    if (
+      isPeak &&
+      current.cutScore >= THRESHOLD &&
+      current.time - lastCutTime >= MIN_DISTANCE
+    ) {
+
+      cuts.push({
+        time: current.time,
+        score: current.cutScore,
+        diffRaw: current.cutDiffRaw
+      });
+
+      lastCutTime =
+        current.time;
+    }
+  }
+
+
+  return cuts;
+}
+
+
+/*
+  ------------------------------------------------------------
+  Schnittliste darstellen
+  ------------------------------------------------------------
+*/
+
+function renderCutList(cuts) {
+
+  if (!cuts.length) {
+
+    cutListEl.innerHTML =
+      '<span style="color:#777">Keine deutlichen Schnitte erkannt.</span>';
+
+    return;
+  }
+
+
+  cutListEl.innerHTML = "";
+
+
+  cuts.forEach(cut => {
+
+    const element =
+      document.createElement("div");
+
+    element.className =
+      "cut";
+
+
+    element.textContent =
+      `${formatTime(cut.time)} · ${Math.round(cut.score)}% · Δ${formatDecimal(cut.diffRaw)}`;
+
+
+    /*
+      Klick auf Schnitt springt im Video dorthin und zentriert
+      die Zoom-Ansicht des Charts auf diese Stelle.
+    */
+
+    element.addEventListener("click", () => {
+
+      video.currentTime =
+        cut.time;
+
+      video.play().catch(() => {});
+
+      if (results.length) {
+
+        const width =
+          chartViewEnd - chartViewStart || Math.min(4, chartFullDuration);
+
+        setChartView(
+          cut.time - width / 2,
+          cut.time + width / 2
+        );
+      }
+
+    });
+
+
+    element.style.cursor =
+      "pointer";
+
+
+    cutListEl.appendChild(element);
+
+  });
+}
+
+
+/*
+  ------------------------------------------------------------
+  Chart
+  ------------------------------------------------------------
+*/
+
+function prepareChartCanvas() {
+
+  const rect =
+    chart.getBoundingClientRect();
+
+  const dpr =
+    window.devicePixelRatio || 1;
+
+
+  chart.width =
+    Math.round(rect.width * dpr);
+
+  chart.height =
+    Math.round(rect.height * dpr);
+
+
+  chartCtx.setTransform(
+    dpr,
+    0,
+    0,
+    dpr,
+    0,
+    0
+  );
+
+
+  return {
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+
+function drawEmptyChart() {
+
+  const {
+    width,
+    height
+  } = prepareChartCanvas();
+
+
+  chartCtx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  chartCtx.strokeStyle =
+    "#333";
+
+  chartCtx.lineWidth =
+    1;
+
+
+  for (let i = 0; i <= 4; i++) {
+
+    const y =
+      (height / 4) * i;
+
+    chartCtx.beginPath();
+
+    chartCtx.moveTo(
+      0,
+      y
+    );
+
+    chartCtx.lineTo(
+      width,
+      y
+    );
+
+    chartCtx.stroke();
+  }
+}
+
+
+function drawChart(data, cuts, viewStart, viewEnd) {
+
+  const {
+    width,
+    height
+  } = prepareChartCanvas();
+
+
+  chartCtx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  /*
+    Sichtbarer Zeitbereich.
+
+    Ohne explizite Angabe wird die volle Länge angezeigt
+    (bisheriges Verhalten). Mit viewStart/viewEnd kann ein
+    beliebiger Ausschnitt (Zoom) dargestellt werden - die Werte
+    stammen von chartViewStart/chartViewEnd.
+  */
+
+  const fullEndTime =
+    data[data.length - 1].time;
+
+  const start =
+    typeof viewStart === "number" ? viewStart : 0;
+
+  const end =
+    typeof viewEnd === "number" ? viewEnd : fullEndTime;
+
+  const span =
+    Math.max(end - start, 0.001);
+
+  function timeToX(time) {
+    return ((time - start) / span) * width;
+  }
+
+
+  /*
+    Hintergrundlinien.
+  */
+
+  chartCtx.strokeStyle =
+    "#292929";
+
+  chartCtx.lineWidth =
+    1;
+
+
+  for (let i = 0; i <= 4; i++) {
+
+    const y =
+      (height / 4) * i;
+
+    chartCtx.beginPath();
+
+    chartCtx.moveTo(
+      0,
+      y
+    );
+
+    chartCtx.lineTo(
+      width,
+      y
+    );
+
+    chartCtx.stroke();
+  }
+
+
+  /*
+    Nur Punkte innerhalb (plus ein kleiner Rand) des sichtbaren
+    Bereichs zeichnen. Das hält die Linie beim Reinzoomen
+    durchgängig und spart bei langen Videos unnötige Arbeit.
+  */
+
+  const padding = span * 0.05;
+
+  const visibleData =
+    data.filter(
+      item =>
+        item.time >= start - padding &&
+        item.time <= end + padding
+    );
+
+
+  /*
+    Funktion zum Zeichnen einer Kurve.
+  */
+
+  function drawLine(
+    key,
+    lineWidth,
+    color
+  ) {
+
+    if (!visibleData.length) {
+      return;
+    }
+
+    chartCtx.beginPath();
+
+    chartCtx.lineWidth = lineWidth;
+
+    chartCtx.strokeStyle = color;
+
+
+    visibleData.forEach((item, index) => {
+
+      const x =
+        timeToX(item.time);
+
+      const y =
+        height -
+        (item[key] / 100) * height;
+
+
+      if (index === 0) {
+        chartCtx.moveTo(x, y);
+      } else {
+        chartCtx.lineTo(x, y);
+      }
+
+    });
+
+    chartCtx.stroke();
+  }
+
+
+  /*
+    Kontrast (Helligkeit)
+  */
+
+  chartCtx.setLineDash([]);
+
+  drawLine(
+    "contrast",
+    2,
+    "#4CAF50"
+  );
+
+
+  /*
+    Farbkontrast (Farbe), fein gepunktet zur Unterscheidung von
+    der durchgezogenen Helligkeits-Kontrastlinie.
+  */
+
+  chartCtx.setLineDash([
+    2,
+    3
+  ]);
+
+  drawLine(
+    "colorContrast",
+    2,
+    "#FFC107"
+  );
+
+  chartCtx.setLineDash([]);
+
+
+  /*
+    Bewegung gestrichelt
+  */
+
+  chartCtx.setLineDash([
+    5,
+    4
+  ]);
+
+  drawLine(
+    "motion",
+    2,
+    "#2196F3"
+  );
+
+
+  chartCtx.setLineDash([]);
+
+
+  /*
+    Schnittmarkierungen.
+  */
+
+  chartCtx.strokeStyle =
+    "#FF5252";
+
+  
+  chartCtx.lineWidth = 2;
+
+
+  cuts
+    .filter(cut => cut.time >= start - padding && cut.time <= end + padding)
+    .forEach(cut => {
+
+      const x =
+        timeToX(cut.time);
+
+
+      chartCtx.beginPath();
+
+      chartCtx.moveTo(
+        x,
+        0
+      );
+
+      chartCtx.lineTo(
+        x,
+        height
+      );
+
+      chartCtx.stroke();
+
+    });
+
+
+  /*
+    Wiedergabeposition (Playhead).
+
+    Zeigt die aktuelle Videoposition als weiße Linie, sofern sie
+    im sichtbaren Zeitbereich liegt. Ermöglicht den direkten
+    Abgleich zwischen Video und Messwerten.
+  */
+
+  if (
+    videoURL &&
+    isFinite(video.currentTime) &&
+    video.currentTime >= start &&
+    video.currentTime <= end
+  ) {
+
+    const playheadX =
+      timeToX(video.currentTime);
+
+    chartCtx.strokeStyle = "#fff";
+    chartCtx.lineWidth = 2;
+
+    chartCtx.beginPath();
+    chartCtx.moveTo(playheadX, 0);
+    chartCtx.lineTo(playheadX, height);
+    chartCtx.stroke();
+  }
+}
+
+
+/*
+  ------------------------------------------------------------
+  Zoom / Pan
+  ------------------------------------------------------------
+
+  Der Chart zeigt standardmäßig die volle Videolänge. Über
+  Zoom-Buttons, Mausrad oder Ziehen (Maus/Touch) kann in einen
+  Zeitbereich hineingezoomt werden, um einzelne Messwerte genau
+  mit dem Video abzugleichen.
+  ------------------------------------------------------------
+*/
+
+function clampView(start, end) {
+
+  let width =
+    clamp(end - start, MIN_ZOOM_WINDOW_SECONDS, Math.max(chartFullDuration, MIN_ZOOM_WINDOW_SECONDS));
+
+  let s = start;
+  let e = s + width;
+
+  if (s < 0) {
+    s = 0;
+    e = width;
+  }
+
+  if (e > chartFullDuration) {
+    e = chartFullDuration;
+    s = Math.max(0, e - width);
+  }
+
+  return { start: s, end: e };
+}
+
+
+function updateZoomRangeLabel() {
+
+  if (!results.length) {
+    zoomRangeLabelEl.textContent = "Ansicht: –";
+    return;
+  }
+
+  const spanSeconds = chartViewEnd - chartViewStart;
+
+  zoomRangeLabelEl.textContent =
+    `Ansicht: ${formatTime(chartViewStart)}–${formatTime(chartViewEnd)} (${formatDecimal(spanSeconds, 1)} s)`;
+}
+
+
+function setChartView(start, end) {
+
+  if (!results.length) {
+    return;
+  }
+
+  const clamped = clampView(start, end);
+
+  chartViewStart = clamped.start;
+  chartViewEnd = clamped.end;
+
+  updateZoomRangeLabel();
+
+  drawChart(
+    results,
+    detectCuts(results),
+    chartViewStart,
+    chartViewEnd
+  );
+}
+
+
+function zoomChartAround(centerTime, factor) {
+
+  const currentWidth = chartViewEnd - chartViewStart;
+  const newWidth = currentWidth * factor;
+
+  setChartView(
+    centerTime - newWidth / 2,
+    centerTime + newWidth / 2
+  );
+}
+
+
+zoomInBtn.addEventListener("click", () => {
+  const center = (chartViewStart + chartViewEnd) / 2;
+  zoomChartAround(center, 0.5);
+});
+
+zoomOutBtn.addEventListener("click", () => {
+  const center = (chartViewStart + chartViewEnd) / 2;
+  zoomChartAround(center, 2);
+});
+
+zoomResetBtn.addEventListener("click", () => {
+  setChartView(0, chartFullDuration);
+});
+
+
+/*
+  Mausrad: Zoom zentriert auf die Cursor-Position.
+*/
+
+chart.addEventListener("wheel", (event) => {
+
+  if (!results.length) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const rect = chart.getBoundingClientRect();
+  const fraction = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+  const timeAtCursor = chartViewStart + fraction * (chartViewEnd - chartViewStart);
+  const factor = event.deltaY < 0 ? 0.8 : 1.25;
+
+  zoomChartAround(timeAtCursor, factor);
+
+}, { passive: false });
+
+
+/*
+  Ziehen (Maus/Touch über Pointer Events): Ansicht verschieben.
+  Ein Klick ohne nennenswerte Bewegung springt stattdessen im
+  Video an diese Stelle.
+*/
+
+chart.addEventListener("pointerdown", (event) => {
+
+  if (!results.length) {
+    return;
+  }
+
+  chartPointerActive = true;
+  chartPointerMoved = false;
+  chartPointerStartX = event.clientX;
+  chartPointerStartViewStart = chartViewStart;
+  chartPointerStartWidth = chartViewEnd - chartViewStart;
+
+  chart.setPointerCapture(event.pointerId);
+});
+
+chart.addEventListener("pointermove", (event) => {
+
+  if (!chartPointerActive) {
+    return;
+  }
+
+  const dx = event.clientX - chartPointerStartX;
+
+  if (Math.abs(dx) > 4) {
+    chartPointerMoved = true;
+  }
+
+  const rect = chart.getBoundingClientRect();
+  const timeDelta = -(dx / rect.width) * chartPointerStartWidth;
+
+  setChartView(
+    chartPointerStartViewStart + timeDelta,
+    chartPointerStartViewStart + timeDelta + chartPointerStartWidth
+  );
+});
+
+chart.addEventListener("pointerup", (event) => {
+
+  if (!chartPointerActive) {
+    return;
+  }
+
+  chartPointerActive = false;
+
+  if (!chartPointerMoved && results.length) {
+
+    const rect = chart.getBoundingClientRect();
+    const fraction = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    const time = chartViewStart + fraction * (chartViewEnd - chartViewStart);
+
+    video.currentTime = clamp(time, 0, chartFullDuration);
+  }
+});
+
+
+/*
+  ------------------------------------------------------------
+  Synchronisation mit der Video-Wiedergabe
+  ------------------------------------------------------------
+
+  Während der Wiedergabe wird der Chart per requestAnimationFrame
+  laufend neu gezeichnet (Playhead) und die Ansicht automatisch
+  nachgeführt, falls die Wiedergabeposition den Rand des aktuell
+  sichtbaren Zeitfensters verlässt. So bleibt der Chart bei
+  starkem Zoom synchron zum Video.
+  ------------------------------------------------------------
+*/
+
+function autoPanToPlayhead() {
+
+  const t = video.currentTime;
+
+  if (t < chartViewStart || t > chartViewEnd) {
+
+    const width = chartViewEnd - chartViewStart;
+    const clamped = clampView(t - width / 2, t + width / 2);
+
+    chartViewStart = clamped.start;
+    chartViewEnd = clamped.end;
+
+    updateZoomRangeLabel();
+  }
+}
+
+function playbackSyncTick() {
+
+  if (results.length) {
+
+    autoPanToPlayhead();
+
+    drawChart(
+      results,
+      detectCuts(results),
+      chartViewStart,
+      chartViewEnd
+    );
+  }
+
+  if (!video.paused && !video.ended) {
+    playheadRafId = requestAnimationFrame(playbackSyncTick);
+  } else {
+    playheadRafId = null;
+  }
+}
+
+video.addEventListener("play", () => {
+
+  if (playheadRafId === null) {
+    playheadRafId = requestAnimationFrame(playbackSyncTick);
+  }
+});
+
+video.addEventListener("seeked", () => {
+
+  if (results.length && video.paused) {
+
+    autoPanToPlayhead();
+
+    drawChart(
+      results,
+      detectCuts(results),
+      chartViewStart,
+      chartViewEnd
+    );
+  }
+});
+
+video.addEventListener("pause", () => {
+
+  if (results.length) {
+
+    drawChart(
+      results,
+      detectCuts(results),
+      chartViewStart,
+      chartViewEnd
+    );
+  }
+});
+
+
+/*
+  Fenstergröße geändert.
+
+  Zeichnet den Chart mit der aktuell gewählten Zoom-Ansicht neu
+  statt immer auf die volle Länge zurückzuspringen.
+*/
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    if (results.length) {
+
+      drawChart(
+        results,
+        detectCuts(results),
+        chartViewStart,
+        chartViewEnd
+      );
+
+    } else {
+
+      drawEmptyChart();
+
+    }
+
+  }
+);
+
+
+/*
+  ------------------------------------------------------------
+  Hilfsfunktionen
+  ------------------------------------------------------------
+*/
+
+function clamp(
+  value,
+  min,
+  max
+) {
+
+  return Math.max(
+    min,
+    Math.min(max, value)
+  );
+}
+
+
+function average(values) {
+
+  if (!values.length) {
+    return 0;
+  }
+
+  return values.reduce(
+    (sum, value) => sum + value,
+    0
+  ) / values.length;
+}
+
+
+function formatTime(seconds) {
+
+  const minutes =
+    Math.floor(seconds / 60);
+
+  const secs =
+    Math.floor(seconds % 60);
+
+  return (
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(secs).padStart(2, "0")
+  );
+}
+
+
+/*
+  Zahl im deutschen Format (Komma statt Punkt) formatieren.
+
+  Wird sowohl für die Kachel-Anzeige (weniger Nachkommastellen)
+  als auch für den CSV-Export (mehr Nachkommastellen, für die
+  wissenschaftliche Weiterverarbeitung) verwendet.
+*/
+
+function formatDecimal(value, digits = 1) {
+
+  if (typeof value !== "number" || !isFinite(value)) {
+    return "–";
+  }
+
+  return value.toFixed(digits).replace(".", ",");
+}
+
+
+function nextFrame() {
+
+  return new Promise(resolve => {
+
+    if ("requestIdleCallback" in window) {
+
+      requestIdleCallback(
+        () => resolve(),
+        { timeout: 50 }
+      );
+
+    } else {
+
+      setTimeout(
+        resolve,
+        0
+      );
+
+    }
+
+  });
+}
+
+
+/*
+  ------------------------------------------------------------
+  CSV-Export (aktuelles Video)
+  ------------------------------------------------------------
+
+  Zwei getrennte Dateien:
+
+  - Einzelbilder: eine Zeile pro analysiertem Frame mit sowohl
+    den Rohwerten (unnormiert, für eigene Auswertung/Normierung)
+    als auch den in der App verwendeten kalibrierten 0-100-Werten.
+  - Zusammenfassung: Kennzahlen zur gesamten Analyse.
+
+  Format: Semikolon als Trennzeichen, Komma als Dezimaltrennzeichen
+  (deutsches Excel-CSV-Format). Ein BOM wird vorangestellt, damit
+  Umlaute in Excel korrekt als UTF-8 erkannt werden.
+  ------------------------------------------------------------
+*/
+
+function buildFramesCsv() {
+
+  if (!results.length) {
+    return null;
+  }
+
+  const cuts = detectCuts(results);
+  const cutTimes = new Set(cuts.map(cut => cut.time));
+
+  const header = [
+    "Zeit_s",
+    "Kontrast_Helligkeit_roh",
+    "Kontrast_Helligkeit_roh_Nachbar",
+    "Kontrast_Helligkeit_roh_Trennung",
+    "Kontrast_Helligkeit_norm_0_100",
+    "Farbkontrast_roh",
+    "Farbkontrast_roh_Nachbar",
+    "Farbkontrast_roh_Trennung",
+    "Farbkontrast_norm_0_100",
+    "Bewegung_roh_Helligkeit_pro_s",
+    "Bewegung_norm_0_100",
+    "SchnittIntensitaet_roh_deltaRGB",
+    "SchnittScore_norm_0_100",
+    "IstSchnitt"
+  ].join(";");
+
+  const rows = results.map(r => [
+    formatDecimal(r.time, 3),
+    formatDecimal(r.contrastRaw, 3),
+    formatDecimal(r.contrastNeighborRaw, 3),
+    formatDecimal(r.contrastSeparationRaw, 3),
+    formatDecimal(r.contrast, 2),
+    formatDecimal(r.colorContrastRaw, 3),
+    formatDecimal(r.colorContrastNeighborRaw, 3),
+    formatDecimal(r.colorContrastSeparationRaw, 3),
+    formatDecimal(r.colorContrast, 2),
+    formatDecimal(r.motionRaw, 3),
+    formatDecimal(r.motion, 2),
+    formatDecimal(r.cutDiffRaw, 3),
+    formatDecimal(r.cutScore, 2),
+    cutTimes.has(r.time) ? 1 : 0
+  ].join(";"));
+
+  return [header, ...rows].join("\r\n");
+}
+
+
+function buildSummaryCsv() {
+
+  if (!lastSummary) {
+    return null;
+  }
+
+  const rows = [
+    ["Kennzahl", "Wert"],
+    ["Serie", lastSummary.seriesName || "-"],
+    ["Dateiname", lastSummary.fileName || "-"],
+    ["Sample_FPS", lastSummary.sampleFps],
+    ["Kontrast_Raster", `${lastSummary.contrastGridCols}x${lastSummary.contrastGridRows}`],
+    ["Analyseaufloesung_px", `${lastSummary.analysisWidth}x${lastSummary.analysisHeight}`],
+    ["Anzahl_Frames", lastSummary.frameCount],
+    ["Anzahl_Schnitte", lastSummary.cutCount],
+    ["Analyse_abgebrochen", lastSummary.wasCancelled ? "ja" : "nein"],
+    ["Analysezeit_s", formatDecimal(lastSummary.analysisTimeSeconds, 1)],
+    ["Kontrast_Helligkeit_roh_Mittelwert", formatDecimal(lastSummary.avgContrastRaw, 3)],
+    ["Kontrast_Helligkeit_roh_Nachbar_Mittelwert", formatDecimal(lastSummary.avgContrastNeighborRaw, 3)],
+    ["Kontrast_Helligkeit_roh_Trennung_Mittelwert", formatDecimal(lastSummary.avgContrastSeparationRaw, 3)],
+    ["Kontrast_Helligkeit_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgContrast, 2)],
+    ["Farbkontrast_roh_Mittelwert", formatDecimal(lastSummary.avgColorContrastRaw, 3)],
+    ["Farbkontrast_roh_Nachbar_Mittelwert", formatDecimal(lastSummary.avgColorContrastNeighborRaw, 3)],
+    ["Farbkontrast_roh_Trennung_Mittelwert", formatDecimal(lastSummary.avgColorContrastSeparationRaw, 3)],
+    ["Farbkontrast_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgColorContrast, 2)],
+    ["Bewegung_roh_Helligkeit_pro_s_Mittelwert", formatDecimal(lastSummary.avgMotionRaw, 3)],
+    ["Bewegung_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgMotion, 2)],
+    ["SchnittIntensitaet_roh_deltaRGB_Mittelwert", formatDecimal(lastSummary.avgCutDiffRaw, 3)],
+    ["SchnittScore_norm_0_100_Mittelwert", formatDecimal(lastSummary.avgCutScoreNorm, 2)]
+  ];
+
+  return rows.map(cols => cols.join(";")).join("\r\n");
+}
+
+
+function sanitizeFileNameBase() {
+
+  const raw =
+    currentSeriesName ||
+    (currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : "videoanalyse");
+
+  return raw.replace(/[^a-z0-9_-]+/gi, "_");
+}
+
+
+function downloadCsv(content, filename) {
+
+  if (content === null) {
+    return;
+  }
+
+  const blob =
+    new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+
+exportFramesBtn.addEventListener("click", () => {
+
+  downloadCsv(
+    buildFramesCsv(),
+    `${sanitizeFileNameBase()}_einzelbilder.csv`
+  );
+});
+
+
+exportSummaryBtn.addEventListener("click", () => {
+
+  downloadCsv(
+    buildSummaryCsv(),
+    `${sanitizeFileNameBase()}_zusammenfassung.csv`
+  );
+});
+
+
+/*
+  ------------------------------------------------------------
+  Vergleich mehrerer Videos (lokaler Speicher)
+  ------------------------------------------------------------
+
+  Jede Analyse kann per Button der Vergleichsliste hinzugefügt
+  werden. Diese wird in localStorage abgelegt und bleibt damit
+  auch nach dem Schließen/Neuladen der Seite erhalten (sofern die
+  Datei in einem normalen Browser-Tab geöffnet ist - in einer
+  eingebetteten/sandboxed Vorschau kann localStorage geblockt
+  sein, siehe try/catch unten).
+  ------------------------------------------------------------
+*/
+
+function loadComparisonList() {
+
+  try {
+
+    const raw = localStorage.getItem(COMPARISON_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+
+  } catch (error) {
+
+    console.error("Vergleichsliste konnte nicht gelesen werden.", error);
+    return [];
+  }
+}
+
+
+function saveComparisonList(list) {
+
+  try {
+
+    localStorage.setItem(COMPARISON_STORAGE_KEY, JSON.stringify(list));
+    return true;
+
+  } catch (error) {
+
+    console.error("Vergleichsliste konnte nicht gespeichert werden.", error);
+    return false;
+  }
+}
+
+
+function updateComparisonUi() {
+
+  const list = loadComparisonList();
+
+  comparisonCountEl.textContent =
+    `${list.length} Video${list.length === 1 ? "" : "s"} gespeichert`;
+
+  exportComparisonBtn.disabled = list.length === 0;
+  clearComparisonBtn.disabled = list.length === 0;
+}
+
+
+function buildComparisonCsv(list) {
+
+  if (!list.length) {
+    return null;
+  }
+
+  const header = [
+    "Serie",
+    "Dateiname",
+    "Gespeichert_am",
+    "Sample_FPS",
+    "Kontrast_Raster",
+    "Anzahl_Frames",
+    "Anzahl_Schnitte",
+    "Kontrast_Helligkeit_roh_Mittelwert",
+    "Kontrast_Helligkeit_roh_Nachbar_Mittelwert",
+    "Kontrast_Helligkeit_roh_Trennung_Mittelwert",
+    "Kontrast_Helligkeit_norm_0_100_Mittelwert",
+    "Farbkontrast_roh_Mittelwert",
+    "Farbkontrast_roh_Nachbar_Mittelwert",
+    "Farbkontrast_roh_Trennung_Mittelwert",
+    "Farbkontrast_norm_0_100_Mittelwert",
+    "Bewegung_roh_Helligkeit_pro_s_Mittelwert",
+    "Bewegung_norm_0_100_Mittelwert",
+    "SchnittIntensitaet_roh_deltaRGB_Mittelwert",
+    "SchnittScore_norm_0_100_Mittelwert",
+    "Analysezeit_s"
+  ].join(";");
+
+  const rows = list.map(entry => [
+    entry.seriesName || "-",
+    entry.fileName || "-",
+    entry.savedAt || "-",
+    entry.sampleFps,
+    entry.contrastGridCols && entry.contrastGridRows
+      ? `${entry.contrastGridCols}x${entry.contrastGridRows}`
+      : "-",
+    entry.frameCount,
+    entry.cutCount,
+    formatDecimal(entry.avgContrastRaw, 3),
+    formatDecimal(entry.avgContrastNeighborRaw, 3),
+    formatDecimal(entry.avgContrastSeparationRaw, 3),
+    formatDecimal(entry.avgContrast, 2),
+    formatDecimal(entry.avgColorContrastRaw, 3),
+    formatDecimal(entry.avgColorContrastNeighborRaw, 3),
+    formatDecimal(entry.avgColorContrastSeparationRaw, 3),
+    formatDecimal(entry.avgColorContrast, 2),
+    formatDecimal(entry.avgMotionRaw, 3),
+    formatDecimal(entry.avgMotion, 2),
+    formatDecimal(entry.avgCutDiffRaw, 3),
+    formatDecimal(entry.avgCutScoreNorm, 2),
+    formatDecimal(entry.analysisTimeSeconds, 1)
+  ].join(";"));
+
+  return [header, ...rows].join("\r\n");
+}
+
+
+addToComparisonBtn.addEventListener("click", () => {
+
+  if (!lastSummary) {
+    return;
+  }
+
+  const list = loadComparisonList();
+
+  list.push({
+    seriesName: lastSummary.seriesName,
+    fileName: lastSummary.fileName,
+    savedAt: new Date().toISOString(),
+    sampleFps: lastSummary.sampleFps,
+    contrastGridCols: lastSummary.contrastGridCols,
+    contrastGridRows: lastSummary.contrastGridRows,
+    frameCount: lastSummary.frameCount,
+    cutCount: lastSummary.cutCount,
+    avgContrastRaw: lastSummary.avgContrastRaw,
+    avgContrastNeighborRaw: lastSummary.avgContrastNeighborRaw,
+    avgContrastSeparationRaw: lastSummary.avgContrastSeparationRaw,
+    avgContrast: lastSummary.avgContrast,
+    avgColorContrastRaw: lastSummary.avgColorContrastRaw,
+    avgColorContrastNeighborRaw: lastSummary.avgColorContrastNeighborRaw,
+    avgColorContrastSeparationRaw: lastSummary.avgColorContrastSeparationRaw,
+    avgColorContrast: lastSummary.avgColorContrast,
+    avgMotionRaw: lastSummary.avgMotionRaw,
+    avgMotion: lastSummary.avgMotion,
+    avgCutDiffRaw: lastSummary.avgCutDiffRaw,
+    avgCutScoreNorm: lastSummary.avgCutScoreNorm,
+    analysisTimeSeconds: lastSummary.analysisTimeSeconds
+  });
+
+  const success = saveComparisonList(list);
+
+  if (success) {
+
+    statusEl.textContent = "Zur Vergleichsliste hinzugefügt.";
+    updateComparisonUi();
+
+  } else {
+
+    statusEl.textContent =
+      "Konnte nicht im lokalen Speicher abgelegt werden (evtl. blockiert der Browser lokalen Speicher in dieser Ansicht).";
+  }
+});
+
+
+exportComparisonBtn.addEventListener("click", () => {
+
+  downloadCsv(
+    buildComparisonCsv(loadComparisonList()),
+    "videoanalyse_vergleich.csv"
+  );
+});
+
+
+clearComparisonBtn.addEventListener("click", () => {
+
+  const confirmed =
+    window.confirm(
+      "Vergleichsliste wirklich leeren? Das kann nicht rückgängig gemacht werden."
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    localStorage.removeItem(COMPARISON_STORAGE_KEY);
+  } catch (error) {
+    console.error("Vergleichsliste konnte nicht gelöscht werden.", error);
+  }
+
+  updateComparisonUi();
+});
+
+
+/*
+  Initialer Chart und Vergleichsliste.
+*/
+
+drawEmptyChart();
+updateComparisonUi();
+
+</script>
+
+</body>
+</html>
